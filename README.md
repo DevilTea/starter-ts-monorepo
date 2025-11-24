@@ -7,8 +7,9 @@
 
 _description_
 
-> **Note**:
-> Replace `pkg-placeholder`, `repo-placeholder`, `_description_` and `deviltea` globally to use this template.
+**Checklist for using this template:**
+- [ ] Replace `pkg-placeholder`, `repo-placeholder`, `_description_` and `deviltea` globally to use this template.
+- [ ] Set `NPM_TOKEN` secret in GitHub repository settings for publishing to npm.
 
 ## License
 

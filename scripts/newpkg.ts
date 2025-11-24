@@ -145,6 +145,10 @@ describe('hello', () => {
 	},
 	"include": [
 		"./src/**/*.ts"
+	],
+	"exclude": [
+		"./src/**/*.test.ts",
+		"./src/**/*.bench.ts"
 	]
 }
 	`.trim(),
@@ -159,6 +163,11 @@ describe('hello', () => {
 		"./tests/**/*.ts"
 	]
 }
+	`.trim(),
+	'vitest.config.ts': `
+import { defineProject } from 'vitest/config'
+
+export default defineProject({})
 	`.trim(),
 }
 
