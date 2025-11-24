@@ -3,7 +3,7 @@
 	"type": "module",
 	"version": "0.0.0",
 	"private": true,
-	"packageManager": "pnpm@10.14.0",
+	"packageManager": "pnpm@10.22.0",
 	"description": "_description_",
 	"author": "DevilTea <ch870814@gmail.com>",
 	"license": "MIT",
@@ -16,7 +16,7 @@
 	"keywords": [],
 	"sideEffects": false,
 	"engines": {
-		"node": ">=22"
+		"node": "24"
 	},
 	"scripts": {
 		"build": "pnpm -r --filter=./packages/* build",
