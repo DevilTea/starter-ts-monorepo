@@ -3,7 +3,7 @@
 	"type": "module",
 	"version": "0.0.0",
 	"private": true,
-	"packageManager": "pnpm@10.22.0",
+	"packageManager": "pnpm@10.27.0",
 	"description": "_description_",
 	"author": "DevilTea <ch870814@gmail.com>",
 	"license": "MIT",
@@ -20,7 +20,6 @@
 	},
 	"scripts": {
 		"build": "pnpm -r --filter=./packages/* build",
-		"stub": "pnpm -r --filter=./packages/* stub",
 		"newpkg": "tsx ./scripts/newpkg.ts",
 		"publint": "pnpm -r --filter=./packages/* exec publint",
 		"publish:packages": "pnpm -r --filter=./packages/* publish",
@@ -47,9 +46,9 @@
 		"publint": "catalog:",
 		"rimraf": "catalog:",
 		"simple-git-hooks": "catalog:",
+		"tsdown": "catalog:",
 		"tsx": "catalog:",
 		"typescript": "catalog:",
-		"unbuild": "catalog:",
 		"vitest": "catalog:",
 		"zx": "catalog:"
 	},

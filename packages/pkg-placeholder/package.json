@@ -30,14 +30,13 @@
 	},
 	"main": "dist/index.cjs",
 	"module": "dist/index.mjs",
-	"types": "dist/index.d.ts",
+	"types": "dist/index.d.cts",
 	"files": [
 		"dist"
 	],
 	"scripts": {
-		"build": "unbuild",
+		"build": "tsdown",
 		"build:pack": "pnpm build && pnpm pack",
-		"stub": "unbuild --stub",
 		"typecheck": "pnpm typecheck:package && pnpm typecheck:test",
 		"typecheck:package": "tsc --project ./tsconfig.package.json --noEmit",
 		"typecheck:test": "tsc --project ./tsconfig.tests.json --noEmit"
