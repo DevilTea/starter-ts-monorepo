@@ -70,7 +70,7 @@ pnpm publint
 
 ## Release
 
-- Manual: trigger the `Release` workflow (`.github/workflows/release.yml`) via workflow_dispatch, choosing patch/minor/major. It runs `bumpp -r`, builds, publishes all `packages/*` to npm (needs the `NPM_TOKEN` repo secret), and generates a GitHub release via `changelogithub`.
+- Releases run in CI: trigger the `Release` workflow (workflow_dispatch) with a `bump_type` (patch/minor/major). It validates (`pnpm build && pnpm publint && pnpm typecheck && pnpm test`), bumps all packages with `bumpp -r` (pushes the release commit + `v*` tag), publishes every `packages/*` package to npm via trusted publishing (OIDC — no token secret), then generates GitHub release notes with `changelogithub`.
 - Docs deploy automatically to GitHub Pages on every push to `main` (`deploy-docs.yml`).
 - Weekly `security-audit.yml` runs `pnpm audit --audit-level=moderate` (Sundays 21:00 UTC).
 
