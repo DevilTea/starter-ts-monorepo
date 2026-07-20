@@ -1,7 +1,11 @@
 {
 	"extends": "@deviltea/tsconfig/base",
 	"compilerOptions": {
-		"composite": true
+		"composite": true,
+		"lib": [
+			"ESNext"
+		],
+		"types": []
 	},
 	"include": [
 		"./src/**/*.ts"

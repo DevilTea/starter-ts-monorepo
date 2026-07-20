@@ -1,24 +1,23 @@
 ---
-# https://vitepress.dev/reference/default-theme-home-page
 layout: home
 
 hero:
   name: "repo-placeholder"
-  text: "Document for repo-placeholder"
-  tagline: My great project tagline
+  text: "TypeScript monorepo package starter"
+  tagline: Publish runtime-aware npm packages with tested metadata, documentation, and release automation.
   actions:
     - theme: brand
-      text: Markdown Examples
+      text: Get Started
       link: /markdown-examples
     - theme: alt
-      text: API Examples
-      link: /api-examples
+      text: Repository
+      link: https://github.com/DevilTea/repo-placeholder
 
 features:
-  - title: Feature A
-    details: Lorem ipsum dolor sit amet, consectetur adipiscing elit
-  - title: Feature B
-    details: Lorem ipsum dolor sit amet, consectetur adipiscing elit
-  - title: Feature C
-    details: Lorem ipsum dolor sit amet, consectetur adipiscing elit
+  - title: Runtime-aware packages
+    details: Generate platform-neutral, browser, or Node.js packages with matching tsdown and TypeScript environments.
+  - title: ESM-first publishing
+    details: Default to ESM-only output or select deterministic ESM/CommonJS dual output when compatibility requires it.
+  - title: Protected delivery
+    details: Validate package consumers, documentation, release metadata, and resumable npm trusted publishing in GitHub Actions.
 ---

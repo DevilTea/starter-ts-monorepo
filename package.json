@@ -49,16 +49,12 @@
 		"bumpp": "catalog:",
 		"eslint": "catalog:",
 		"lint-staged": "catalog:",
-		"pathe": "catalog:",
-		"pkg-size": "catalog:",
 		"publint": "catalog:",
-		"rimraf": "catalog:",
 		"simple-git-hooks": "catalog:",
 		"tsdown": "catalog:",
 		"tsx": "catalog:",
 		"typescript": "catalog:",
-		"vitest": "catalog:",
-		"zx": "catalog:"
+		"vitest": "catalog:"
 	},
 	"simple-git-hooks": {
 		"pre-commit": "pnpm lint-staged"

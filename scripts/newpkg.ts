@@ -1,7 +1,14 @@
+import type { PackageFormat, PackageRuntime } from './template.js'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
-import { cancel, intro, isCancel, outro, text } from '@clack/prompts'
-import { createPackage, getDefaultPackageName, validatePackageDirectoryName, validatePackageName } from './template.js'
+import { cancel, intro, isCancel, outro, select, text } from '@clack/prompts'
+import {
+	createPackage,
+	getDefaultPackageName,
+
+	validatePackageDirectoryName,
+	validatePackageName,
+} from './template.js'
 
 const root = fileURLToPath(new URL('..', import.meta.url))
 
@@ -28,10 +35,72 @@ if (isCancel(packageName)) {
 	process.exit(0)
 }
 
+const description = await text({
+	message: 'Package description',
+	validate: value => value?.trim() ? undefined : 'Required.',
+})
+
+if (isCancel(description)) {
+	cancel('Operation cancelled.')
+	process.exit(0)
+}
+
+const runtime = await select<PackageRuntime>({
+	message: 'Runtime target',
+	initialValue: 'neutral',
+	options: [
+		{
+			value: 'neutral',
+			label: 'Platform-neutral',
+			hint: 'recommended for shared libraries',
+		},
+		{
+			value: 'browser',
+			label: 'Browser',
+			hint: 'browser globals and bundlers',
+		},
+		{
+			value: 'node',
+			label: 'Node.js 22+',
+			hint: 'Node.js APIs and runtime targeting',
+		},
+	],
+})
+
+if (isCancel(runtime)) {
+	cancel('Operation cancelled.')
+	process.exit(0)
+}
+
+const format = await select<PackageFormat>({
+	message: 'Published module format',
+	initialValue: 'esm',
+	options: [
+		{
+			value: 'esm',
+			label: 'ESM only',
+			hint: 'recommended for new libraries',
+		},
+		{
+			value: 'dual',
+			label: 'ESM + CommonJS',
+			hint: 'use only when CommonJS consumers are required',
+		},
+	],
+})
+
+if (isCancel(format)) {
+	cancel('Operation cancelled.')
+	process.exit(0)
+}
+
 try {
 	await createPackage(root, {
 		directoryName: packageDirectory,
 		packageName,
+		description,
+		runtime,
+		format,
 	})
 	outro(`Package "${packageName}" created in packages/${packageDirectory}.`)
 }

@@ -1,8 +1,10 @@
+import type { PackageFormat, PackageRuntime } from './template.js'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
-import { cancel, confirm, intro, isCancel, outro, text } from '@clack/prompts'
+import { cancel, confirm, intro, isCancel, outro, select, text } from '@clack/prompts'
 import {
 	initializeTemplate,
+
 	validatePackageDirectoryName,
 	validatePackageName,
 	validateRepositoryName,
@@ -52,6 +54,49 @@ const packageName = await text({
 if (isCancel(packageName))
 	exitCancelled()
 
+const packageRuntime = await select<PackageRuntime>({
+	message: 'Initial package runtime target',
+	initialValue: 'neutral',
+	options: [
+		{
+			value: 'neutral',
+			label: 'Platform-neutral',
+			hint: 'recommended for shared libraries',
+		},
+		{
+			value: 'browser',
+			label: 'Browser',
+			hint: 'browser globals and bundlers',
+		},
+		{
+			value: 'node',
+			label: 'Node.js 22+',
+			hint: 'Node.js APIs and runtime targeting',
+		},
+	],
+})
+if (isCancel(packageRuntime))
+	exitCancelled()
+
+const packageFormat = await select<PackageFormat>({
+	message: 'Initial package module format',
+	initialValue: 'esm',
+	options: [
+		{
+			value: 'esm',
+			label: 'ESM only',
+			hint: 'recommended for new libraries',
+		},
+		{
+			value: 'dual',
+			label: 'ESM + CommonJS',
+			hint: 'use only when CommonJS consumers are required',
+		},
+	],
+})
+if (isCancel(packageFormat))
+	exitCancelled()
+
 const authorName = await text({
 	message: 'Author name',
 	initialValue: repositoryOwner,
@@ -79,6 +124,8 @@ try {
 		description,
 		packageDirectory,
 		packageName,
+		packageRuntime,
+		packageFormat,
 		authorName,
 		authorEmail: authorEmail || undefined,
 	})

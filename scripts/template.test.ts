@@ -12,24 +12,114 @@ afterEach(async () => {
 })
 
 describe('createPackage', () => {
-	it('creates a cross-platform package scaffold and project reference', async () => {
+	it('creates a documented Node.js dual-format package and project reference', async () => {
 		const root = await createRoot()
 
 		await createPackage(root, {
+			description: 'A dual-format package',
 			directoryName: 'new-package',
+			format: 'dual',
 			packageName: '@example/new-package',
+			runtime: 'node',
 		})
 
 		const packageJson = await readJson(join(root, 'packages/new-package/package.json'))
 		const tsConfig = await readJson(join(root, 'tsconfig.json'))
+		const buildConfig = await readFile(join(root, 'packages/new-package/tsdown.config.ts'), 'utf8')
+		const packageTsConfig = await readJson(join(root, 'packages/new-package/tsconfig.package.json'))
 		expect(packageJson.types)
 			.toBe('./dist/index.d.mts')
 		expect(packageJson.sideEffects)
 			.toBe(false)
-		expect(await readFile(join(root, 'packages/new-package/tsdown.config.ts'), 'utf8'))
-			.toContain('defineConfig')
+		expect(packageJson.engines)
+			.toEqual({ node: '>=22' })
+		expect(packageJson.keywords)
+			.toEqual(['typescript', 'node'])
+		expect(packageTsConfig.extends)
+			.toBe('@deviltea/tsconfig/node')
+		expect(await readFile(join(root, 'packages/new-package/README.md'), 'utf8'))
+			.toContain('Node.js 22 or newer.')
+		expect(await readFile(join(root, 'packages/new-package/LICENSE'), 'utf8'))
+			.toContain('MIT License')
+		expect(buildConfig)
+			.toContain('format: [\'esm\', \'cjs\']')
+		expect(buildConfig)
+			.toContain('platform: \'node\'')
+		expect(buildConfig)
+			.toContain('target: \'node22\'')
+		expect(buildConfig)
+			.toContain('fixedExtension: true')
 		expect(tsConfig.references)
 			.toContainEqual({ path: './packages/new-package/tsconfig.json' })
+	})
+
+	it('creates a browser-targeted ESM-only package with matching exports', async () => {
+		const root = await createRoot()
+
+		await createPackage(root, {
+			description: 'An ESM package',
+			directoryName: 'esm-package',
+			format: 'esm',
+			packageName: '@example/esm-package',
+			runtime: 'browser',
+		})
+
+		const packageJson = await readJson(join(root, 'packages/esm-package/package.json'))
+		const buildConfig = await readFile(join(root, 'packages/esm-package/tsdown.config.ts'), 'utf8')
+		const packageTsConfig = await readJson(join(root, 'packages/esm-package/tsconfig.package.json'))
+		const testsTsConfig = await readJson(join(root, 'packages/esm-package/tsconfig.tests.json'))
+		expect(packageJson.exports)
+			.toEqual({
+				'.': {
+					types: './dist/index.d.ts',
+					default: './dist/index.js',
+				},
+			})
+		expect(packageJson.main)
+			.toBe('./dist/index.js')
+		expect(packageJson.engines)
+			.toBeUndefined()
+		expect(packageJson.keywords)
+			.toEqual(['typescript', 'browser'])
+		expect(packageTsConfig.extends)
+			.toBe('@deviltea/tsconfig/dom')
+		expect(testsTsConfig.compilerOptions)
+			.toEqual({
+				composite: true,
+				lib: ['ESNext', 'DOM', 'DOM.Iterable'],
+			})
+		expect(buildConfig)
+			.toContain('format: [\'esm\']')
+		expect(buildConfig)
+			.toContain('platform: \'browser\'')
+		expect(buildConfig)
+			.toContain('target: \'es2022\'')
+		expect(buildConfig).not.toContain('fixedExtension')
+	})
+
+	it('creates a platform-neutral package without platform globals', async () => {
+		const root = await createRoot()
+
+		await createPackage(root, {
+			description: 'A neutral package',
+			directoryName: 'neutral-package',
+			format: 'esm',
+			packageName: '@example/neutral-package',
+			runtime: 'neutral',
+		})
+
+		const packageJson = await readJson(join(root, 'packages/neutral-package/package.json'))
+		const packageTsConfig = await readJson(join(root, 'packages/neutral-package/tsconfig.package.json'))
+		expect(packageJson.engines)
+			.toBeUndefined()
+		expect(packageTsConfig.extends)
+			.toBe('@deviltea/tsconfig/base')
+		expect(packageTsConfig.compilerOptions)
+			.toEqual({
+				composite: true,
+				lib: ['ESNext'],
+				types: [],
+			})
 	})
 
 	it('refuses to overwrite an existing package directory', async () => {
@@ -37,20 +127,27 @@ describe('createPackage', () => {
 		await mkdir(join(root, 'packages/existing'), { recursive: true })
 
 		await expect(createPackage(root, {
+			description: 'Existing package',
 			directoryName: 'existing',
+			format: 'esm',
 			packageName: '@example/existing',
+			runtime: 'neutral',
 		})).rejects.toThrow('already exists')
 	})
 })
 
 describe('initializeTemplate', () => {
-	it('renames the placeholder package and removes starter placeholders', async () => {
+	it('renames and productizes the placeholder as a neutral package', async () => {
 		const root = await createRoot()
 		await mkdir(join(root, 'packages/pkg-placeholder'), { recursive: true })
 		await writeJson(join(root, 'packages/pkg-placeholder/package.json'), {
 			name: '@deviltea/pkg-placeholder',
 			version: '0.0.0',
+			engines: {
+				node: '>=22',
+			},
 		})
+		await writeFile(join(root, 'packages/pkg-placeholder/tsdown.config.ts'), '')
 		await writeFile(join(root, 'README.md'), '# pkg-placeholder\n\n_description_\n')
 		await mkdir(join(root, 'docs/.vitepress'), { recursive: true })
 		await writeFile(join(root, 'docs/index.md'), 'repo-placeholder\n')
@@ -62,7 +159,9 @@ describe('initializeTemplate', () => {
 			repositoryName: 'example-repo',
 			description: 'Example project',
 			packageDirectory: 'core',
+			packageFormat: 'esm',
 			packageName: '@example/core',
+			packageRuntime: 'neutral',
 			authorName: 'Example Author',
 			authorEmail: 'author@example.com',
 		})
@@ -71,6 +170,8 @@ describe('initializeTemplate', () => {
 		const packageJson = await readJson(join(root, 'packages/core/package.json'))
 		const tsConfig = await readJson(join(root, 'tsconfig.json'))
 		const readme = await readFile(join(root, 'README.md'), 'utf8')
+		const buildConfig = await readFile(join(root, 'packages/core/tsdown.config.ts'), 'utf8')
+		const packageTsConfig = await readJson(join(root, 'packages/core/tsconfig.package.json'))
 		expect(rootPackage.repository)
 			.toEqual({
 				type: 'git',
@@ -78,9 +179,34 @@ describe('initializeTemplate', () => {
 			})
 		expect(packageJson.name)
 			.toBe('@example/core')
+		expect(packageJson.exports)
+			.toEqual({
+				'.': {
+					types: './dist/index.d.ts',
+					default: './dist/index.js',
+				},
+			})
+		expect(packageJson.engines)
+			.toBeUndefined()
+		expect(packageJson.keywords)
+			.toEqual(['typescript'])
+		expect(buildConfig)
+			.toContain('platform: \'neutral\'')
+		expect(packageTsConfig.compilerOptions)
+			.toEqual({
+				composite: true,
+				lib: ['ESNext'],
+				types: [],
+			})
 		expect(tsConfig.references)
 			.toContainEqual({ path: './packages/core/tsconfig.json' })
 		expect(readme).not.toMatch(/pkg-placeholder|repo-placeholder|_description_/)
+		expect(readme)
+			.toContain('Platform-neutral package output')
+		expect(await readFile(join(root, 'packages/core/README.md'), 'utf8'))
+			.toContain('Example project')
+		expect(await readFile(join(root, 'packages/core/LICENSE'), 'utf8'))
+			.toContain('Example Author')
 	})
 })
 
@@ -88,6 +214,7 @@ async function createRoot(): Promise<string> {
 	const root = await mkdtemp(join(tmpdir(), 'starter-ts-monorepo-'))
 	roots.push(root)
 	await mkdir(join(root, 'packages'), { recursive: true })
+	await writeFile(join(root, 'LICENSE'), 'MIT License\n\nCopyright (c) 2026 Example Author\n')
 	await writeJson(join(root, 'package.json'), {
 		name: 'monorepo',
 		version: '0.0.0',
