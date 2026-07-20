@@ -13,7 +13,8 @@ export default defineConfig({
 			},
 		],
 		coverage: {
-			enabled: true,
+			provider: 'v8',
+			include: ['packages/*/src/**/*.ts'],
 			exclude: [
 				'**/*.config.*',
 				'**/docs/**',
@@ -22,6 +23,7 @@ export default defineConfig({
 				'**/coverage/**',
 				'**/*.bench.*',
 			],
+			reporter: ['text', 'json-summary', 'html'],
 		},
 		typecheck: {
 			enabled: true,
