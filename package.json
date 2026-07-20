@@ -18,8 +18,12 @@
 	"engines": {
 		"node": ">=24"
 	},
+	"config": {
+		"packageScope": "@deviltea"
+	},
 	"scripts": {
 		"build": "pnpm -r --filter='./packages/*' build",
+		"init:template": "tsx ./scripts/init-template.ts",
 		"newpkg": "tsx ./scripts/newpkg.ts",
 		"publint": "pnpm -r --filter='./packages/*' exec publint",
 		"publish:packages": "pnpm -r --filter='./packages/*' publish",
