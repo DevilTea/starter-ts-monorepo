@@ -1,24 +1,23 @@
 ---
-# https://vitepress.dev/reference/default-theme-home-page
 layout: home
 
 hero:
   name: "repo-placeholder"
-  text: "Document for repo-placeholder"
-  tagline: My great project tagline
+  text: "_description_"
+  tagline: TypeScript monorepo documentation
   actions:
     - theme: brand
-      text: Markdown Examples
-      link: /markdown-examples
-    - theme: alt
-      text: API Examples
+      text: Package API
       link: /api-examples
+    - theme: alt
+      text: Markdown Guide
+      link: /markdown-examples
 
 features:
-  - title: Feature A
-    details: Lorem ipsum dolor sit amet, consectetur adipiscing elit
-  - title: Feature B
-    details: Lorem ipsum dolor sit amet, consectetur adipiscing elit
-  - title: Feature C
-    details: Lorem ipsum dolor sit amet, consectetur adipiscing elit
+  - title: Runtime profiles
+    details: Generate platform-neutral, browser, or Node.js packages with matching build metadata.
+  - title: Module formats
+    details: Default to ESM-only output or opt into dual ESM and CommonJS compatibility.
+  - title: Verified releases
+    details: Validate package consumers, publish through npm trusted publishing, and recover partial releases safely.
 ---
