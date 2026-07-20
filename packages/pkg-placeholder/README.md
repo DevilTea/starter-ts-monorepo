@@ -2,6 +2,10 @@
 
 _description_
 
+## Runtime
+
+Platform-neutral package output for shared libraries.
+
 ## Install
 
 ```bash
