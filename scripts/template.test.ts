@@ -1,4 +1,4 @@
-import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
@@ -7,7 +7,8 @@ import { createPackage, initializeTemplate } from './template.js'
 const roots: string[] = []
 
 afterEach(async () => {
-	await Promise.all(roots.splice(0).map(root => rm(root, { force: true, recursive: true })))
+	await Promise.all(roots.splice(0)
+		.map(root => rm(root, { force: true, recursive: true })))
 })
 
 describe('createPackage', () => {
@@ -21,10 +22,14 @@ describe('createPackage', () => {
 
 		const packageJson = await readJson(join(root, 'packages/new-package/package.json'))
 		const tsConfig = await readJson(join(root, 'tsconfig.json'))
-		expect(packageJson.types).toBe('./dist/index.d.mts')
-		expect(packageJson.sideEffects).toBe(false)
-		expect(await readFile(join(root, 'packages/new-package/tsdown.config.ts'), 'utf8')).toContain('defineConfig')
-		expect(tsConfig.references).toContainEqual({ path: './packages/new-package/tsconfig.json' })
+		expect(packageJson.types)
+			.toBe('./dist/index.d.mts')
+		expect(packageJson.sideEffects)
+			.toBe(false)
+		expect(await readFile(join(root, 'packages/new-package/tsdown.config.ts'), 'utf8'))
+			.toContain('defineConfig')
+		expect(tsConfig.references)
+			.toContainEqual({ path: './packages/new-package/tsconfig.json' })
 	})
 
 	it('refuses to overwrite an existing package directory', async () => {
@@ -49,7 +54,7 @@ describe('initializeTemplate', () => {
 		await writeFile(join(root, 'README.md'), '# pkg-placeholder\n\n_description_\n')
 		await mkdir(join(root, 'docs/.vitepress'), { recursive: true })
 		await writeFile(join(root, 'docs/index.md'), 'repo-placeholder\n')
-		await writeFile(join(root, 'docs/.vitepress/config.ts'), "title: 'repo-placeholder'\n")
+		await writeFile(join(root, 'docs/.vitepress/config.ts'), 'title: \'repo-placeholder\'\n')
 		await writeFile(join(root, 'AGENTS.md'), 'packages/pkg-placeholder\n')
 
 		await initializeTemplate(root, {
@@ -66,12 +71,15 @@ describe('initializeTemplate', () => {
 		const packageJson = await readJson(join(root, 'packages/core/package.json'))
 		const tsConfig = await readJson(join(root, 'tsconfig.json'))
 		const readme = await readFile(join(root, 'README.md'), 'utf8')
-		expect(rootPackage.repository).toEqual({
-			type: 'git',
-			url: 'git+https://github.com/ExampleOrg/example-repo.git',
-		})
-		expect(packageJson.name).toBe('@example/core')
-		expect(tsConfig.references).toContainEqual({ path: './packages/core/tsconfig.json' })
+		expect(rootPackage.repository)
+			.toEqual({
+				type: 'git',
+				url: 'git+https://github.com/ExampleOrg/example-repo.git',
+			})
+		expect(packageJson.name)
+			.toBe('@example/core')
+		expect(tsConfig.references)
+			.toContainEqual({ path: './packages/core/tsconfig.json' })
 		expect(readme).not.toMatch(/pkg-placeholder|repo-placeholder|_description_/)
 	})
 })
