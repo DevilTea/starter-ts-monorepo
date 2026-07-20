@@ -44,14 +44,15 @@ export interface InitializeTemplateOptions {
 
 const packageDirectoryPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 const packageNamePattern = /^(?:@[a-z0-9][a-z0-9._-]*\/)?[a-z0-9][a-z0-9._-]*$/
-const repositoryNamePattern = /^[A-Za-z0-9._-]+$/
-const repositoryOwnerPattern = /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$/
+const repositoryNamePattern = /^[\w.-]+$/
+const repositoryOwnerPattern = /^[A-Z0-9](?:[A-Z0-9-]{0,37}[A-Z0-9])?$/i
 
 export function validatePackageDirectoryName(value: string): string | undefined {
 	if (!value)
 		return 'Required.'
 	if (!packageDirectoryPattern.test(value))
 		return 'Use lowercase letters, numbers, and single hyphens between words.'
+	return undefined
 }
 
 export function validatePackageName(value: string): string | undefined {
@@ -59,6 +60,7 @@ export function validatePackageName(value: string): string | undefined {
 		return 'Required.'
 	if (!packageNamePattern.test(value))
 		return 'Use a lowercase npm package name, optionally scoped (for example @scope/package).'
+	return undefined
 }
 
 export function validateRepositoryName(value: string): string | undefined {
@@ -66,6 +68,7 @@ export function validateRepositoryName(value: string): string | undefined {
 		return 'Required.'
 	if (!repositoryNamePattern.test(value))
 		return 'Use letters, numbers, dots, underscores, or hyphens.'
+	return undefined
 }
 
 export function validateRepositoryOwner(value: string): string | undefined {
@@ -73,6 +76,7 @@ export function validateRepositoryOwner(value: string): string | undefined {
 		return 'Required.'
 	if (!repositoryOwnerPattern.test(value))
 		return 'Enter a valid GitHub user or organization name.'
+	return undefined
 }
 
 export async function getDefaultPackageName(root: string, directoryName: string): Promise<string> {
@@ -256,9 +260,9 @@ function createPackageFiles(rootPackage: PackageJson, options: CreatePackageOpti
 		types: './dist/index.d.mts',
 		files: ['dist'],
 		scripts: {
-			build: 'tsdown',
+			'build': 'tsdown',
 			'build:pack': 'pnpm build && pnpm pack',
-			typecheck: 'pnpm typecheck:package && pnpm typecheck:test',
+			'typecheck': 'pnpm typecheck:package && pnpm typecheck:test',
 			'typecheck:package': 'tsc --project ./tsconfig.package.json --noEmit',
 			'typecheck:test': 'tsc --project ./tsconfig.tests.json --noEmit',
 		},
