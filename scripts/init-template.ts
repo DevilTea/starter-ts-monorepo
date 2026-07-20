@@ -52,6 +52,30 @@ const packageName = await text({
 if (isCancel(packageName))
 	exitCancelled()
 
+const packageRuntime = await select({
+	message: 'Initial package runtime target',
+	initialValue: 'neutral',
+	options: [
+		{
+			value: 'neutral',
+			label: 'Platform-neutral',
+			hint: 'recommended for shared libraries',
+		},
+		{
+			value: 'browser',
+			label: 'Browser',
+			hint: 'browser globals and bundlers',
+		},
+		{
+			value: 'node',
+			label: 'Node.js 22+',
+			hint: 'Node.js APIs and runtime targeting',
+		},
+	],
+})
+if (isCancel(packageRuntime))
+	exitCancelled()
+
 const packageFormat = await select({
 	message: 'Initial package module format',
 	initialValue: 'esm',
@@ -98,6 +122,7 @@ try {
 		description,
 		packageDirectory,
 		packageName,
+		packageRuntime,
 		packageFormat,
 		authorName,
 		authorEmail: authorEmail || undefined,
