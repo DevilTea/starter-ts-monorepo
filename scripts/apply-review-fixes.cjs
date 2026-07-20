@@ -1,0 +1,203 @@
+const fs = require('node:fs')
+
+function read(file) {
+  return fs.readFileSync(file, 'utf8')
+}
+
+function write(file, content) {
+  fs.writeFileSync(file, content)
+}
+
+function replaceOnce(file, from, to) {
+  const content = read(file)
+  if (!content.includes(from))
+    throw new Error(`Expected text not found in ${file}: ${from.slice(0, 120)}`)
+  write(file, content.replace(from, to))
+}
+
+const packagePath = 'package.json'
+const packageJson = JSON.parse(read(packagePath))
+packageJson.engines.node = '>=24'
+write(packagePath, `${JSON.stringify(packageJson, null, '\t')}\n`)
+
+replaceOnce('README.md', 'Node.js 22.14.0 or newer for repository tooling', 'Node.js 24 or newer for repository tooling')
+replaceOnce('AGENTS.md', 'Requires Node >=22.14.0 and pnpm 10.34.4', 'Requires Node >=24 and pnpm 10.34.4')
+replaceOnce('AGENTS.md', 'CI runs build and tests on Node 22 and 24 across Ubuntu, Windows, and macOS', 'CI runs build and tests on Node 24 across Ubuntu, Windows, and macOS')
+replaceOnce('scripts/template.ts', 'Requires Node >=22.14.0 and pnpm 10.34.4', 'Requires Node >=24 and pnpm 10.34.4')
+replaceOnce('scripts/template.ts', 'Node.js 22.14.0 or newer for repository tooling', 'Node.js 24 or newer for repository tooling')
+
+replaceOnce(
+  'scripts/template.ts',
+  `\tawait writeFile(
+\t\tjoin(placeholderDirectory, 'tsdown.config.ts'),
+\t\tcreateTsdownConfig(options.packageFormat, options.packageRuntime),
+\t)
+\tawait updateTemplateTextFiles(root, options, repositoryUrl, author)`,
+  `\tawait writeFile(
+\t\tjoin(placeholderDirectory, 'tsdown.config.ts'),
+\t\tcreateTsdownConfig(options.packageFormat, options.packageRuntime),
+\t)
+\tawait writeFile(
+\t\tjoin(placeholderDirectory, 'tsconfig.package.json'),
+\t\tcreatePackageTsConfig(options.packageRuntime),
+\t)
+\tawait writeFile(
+\t\tjoin(placeholderDirectory, 'tsconfig.tests.json'),
+\t\tcreateTestsTsConfig(options.packageRuntime),
+\t)
+\tawait updateTemplateTextFiles(root, options, repositoryUrl, author)`,
+)
+
+replaceOnce(
+  'scripts/template.ts',
+  `\t\t'tsconfig.package.json': \`
+{
+\t"extends": "@deviltea/tsconfig/base",
+\t"compilerOptions": {
+\t\t"composite": true
+\t},
+\t"include": [
+\t\t"./src/**/*.ts"
+\t]
+}\`,
+\t\t'tsconfig.tests.json': \`
+{
+\t"extends": "@deviltea/tsconfig/node",
+\t"compilerOptions": {
+\t\t"composite": true
+\t},
+\t"include": [
+\t\t"./src/**/*.ts",
+\t\t"./tests/**/*.ts"
+\t]
+}\`,`,
+  `\t\t'tsconfig.package.json': createPackageTsConfig(options.runtime),
+\t\t'tsconfig.tests.json': createTestsTsConfig(options.runtime),`,
+)
+
+replaceOnce(
+  'scripts/template.ts',
+  `function applyPackageRuntime(packageJson: PackageJson, runtime: PackageRuntime): void {`,
+  `function createPackageTsConfig(runtime: PackageRuntime): string {
+\tconst extendsConfig = runtime === 'browser'
+\t\t? '@deviltea/tsconfig/dom'
+\t\t: runtime === 'node'
+\t\t\t? '@deviltea/tsconfig/node'
+\t\t\t: '@deviltea/tsconfig/base'
+\tconst compilerOptions: Record<string, unknown> = {
+\t\tcomposite: true,
+\t}
+\tif (runtime === 'neutral') {
+\t\tcompilerOptions.lib = ['ESNext']
+\t\tcompilerOptions.types = []
+\t}
+\treturn \`${'${'}JSON.stringify({
+\t\textends: extendsConfig,
+\t\tcompilerOptions,
+\t\tinclude: ['./src/**/*.ts'],
+\t}, null, '\\t')}\\n\`
+}
+
+function createTestsTsConfig(runtime: PackageRuntime): string {
+\tconst compilerOptions: Record<string, unknown> = {
+\t\tcomposite: true,
+\t}
+\tif (runtime === 'browser')
+\t\tcompilerOptions.lib = ['ESNext', 'DOM', 'DOM.Iterable']
+\treturn \`${'${'}JSON.stringify({
+\t\textends: '@deviltea/tsconfig/node',
+\t\tcompilerOptions,
+\t\tinclude: ['./src/**/*.ts', './tests/**/*.ts'],
+\t}, null, '\\t')}\\n\`
+}
+
+function applyPackageRuntime(packageJson: PackageJson, runtime: PackageRuntime): void {`,
+)
+
+const placeholderTsConfigPath = 'packages/pkg-placeholder/tsconfig.package.json'
+const placeholderTsConfig = JSON.parse(read(placeholderTsConfigPath))
+placeholderTsConfig.extends = '@deviltea/tsconfig/base'
+placeholderTsConfig.compilerOptions = {
+  composite: true,
+  lib: ['ESNext'],
+  types: [],
+}
+write(placeholderTsConfigPath, `${JSON.stringify(placeholderTsConfig, null, '\t')}\n`)
+
+replaceOnce(
+  'scripts/template.test.ts',
+  `\t\tconst buildConfig = await readFile(join(root, 'packages/new-package/tsdown.config.ts'), 'utf8')`,
+  `\t\tconst buildConfig = await readFile(join(root, 'packages/new-package/tsdown.config.ts'), 'utf8')
+\t\tconst packageTsConfig = await readJson(join(root, 'packages/new-package/tsconfig.package.json'))`,
+)
+replaceOnce(
+  'scripts/template.test.ts',
+  `\t\texpect(packageJson.keywords)
+\t\t\t.toEqual(['typescript', 'node'])`,
+  `\t\texpect(packageJson.keywords)
+\t\t\t.toEqual(['typescript', 'node'])
+\t\texpect(packageTsConfig.extends)
+\t\t\t.toBe('@deviltea/tsconfig/node')`,
+)
+replaceOnce(
+  'scripts/template.test.ts',
+  `\t\tconst buildConfig = await readFile(join(root, 'packages/esm-package/tsdown.config.ts'), 'utf8')`,
+  `\t\tconst buildConfig = await readFile(join(root, 'packages/esm-package/tsdown.config.ts'), 'utf8')
+\t\tconst packageTsConfig = await readJson(join(root, 'packages/esm-package/tsconfig.package.json'))
+\t\tconst testsTsConfig = await readJson(join(root, 'packages/esm-package/tsconfig.tests.json'))`,
+)
+replaceOnce(
+  'scripts/template.test.ts',
+  `\t\texpect(packageJson.keywords)
+\t\t\t.toEqual(['typescript', 'browser'])`,
+  `\t\texpect(packageJson.keywords)
+\t\t\t.toEqual(['typescript', 'browser'])
+\t\texpect(packageTsConfig.extends)
+\t\t\t.toBe('@deviltea/tsconfig/dom')
+\t\texpect(testsTsConfig.compilerOptions)
+\t\t\t.toEqual({
+\t\t\t\tcomposite: true,
+\t\t\t\tlib: ['ESNext', 'DOM', 'DOM.Iterable'],
+\t\t\t})`,
+)
+replaceOnce(
+  'scripts/template.test.ts',
+  `\n\tit('refuses to overwrite an existing package directory', async () => {`,
+  `\n\tit('creates a platform-neutral package without platform globals', async () => {
+\t\tconst root = await createRoot()
+
+\t\tawait createPackage(root, {
+\t\t\tdescription: 'A neutral package',
+\t\t\tdirectoryName: 'neutral-package',
+\t\t\tformat: 'esm',
+\t\t\tpackageName: '@example/neutral-package',
+\t\t\truntime: 'neutral',
+\t\t})
+
+\t\tconst packageJson = await readJson(join(root, 'packages/neutral-package/package.json'))
+\t\tconst packageTsConfig = await readJson(join(root, 'packages/neutral-package/tsconfig.package.json'))
+\t\texpect(packageJson.engines)
+\t\t\t.toBeUndefined()
+\t\texpect(packageTsConfig.extends)
+\t\t\t.toBe('@deviltea/tsconfig/base')
+\t\texpect(packageTsConfig.compilerOptions)
+\t\t\t.toEqual({
+\t\t\t\tcomposite: true,
+\t\t\t\tlib: ['ESNext'],
+\t\t\t\ttypes: [],
+\t\t\t})
+\t})
+
+\tit('refuses to overwrite an existing package directory', async () => {`,
+)
+replaceOnce(
+  'scripts/template.test.ts',
+  `\t\tconst buildConfig = await readFile(join(root, 'packages/core/tsdown.config.ts'), 'utf8')`,
+  `\t\tconst buildConfig = await readFile(join(root, 'packages/core/tsdown.config.ts'), 'utf8')
+\t\tconst packageTsConfig = await readJson(join(root, 'packages/core/tsconfig.package.json'))`,
+)
+replaceOnce(
+  'scripts/template.test.ts',
+  "\t\texpect(buildConfig)\n\t\t\t.toContain('platform: \\\'neutral\\\'')",
+  "\t\texpect(buildConfig)\n\t\t\t.toContain('platform: \\\'neutral\\\'')\n\t\texpect(packageTsConfig.compilerOptions)\n\t\t\t.toEqual({\n\t\t\t\tcomposite: true,\n\t\t\t\tlib: ['ESNext'],\n\t\t\t\ttypes: [],\n\t\t\t})",
+)
