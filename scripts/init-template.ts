@@ -82,7 +82,7 @@ try {
 		authorName,
 		authorEmail: authorEmail || undefined,
 	})
-	outro('Template initialized. Run pnpm install, then configure GitHub Pages and npm trusted publishing.')
+	outro('Template initialized. Run pnpm install --no-frozen-lockfile to refresh workspace importers, then validate the repository.')
 }
 catch (error) {
 	cancel(error instanceof Error ? error.message : String(error))
