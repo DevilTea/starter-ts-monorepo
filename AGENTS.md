@@ -53,12 +53,12 @@ pnpm package:smoke
 
 - TypeScript and ESM-first. New packages default to platform-neutral ESM-only output.
 - Runtime profiles are independent of module format: `neutral`, `browser`, or `node`; and `esm` or `dual`.
-- Select Node.js runtime only when the package uses or intentionally targets Node.js APIs. Only that profile declares `engines.node` and targets `node22`.
+- Runtime profiles must align tsdown and TypeScript: neutral uses base + `lib: ["ESNext"]` + `types: []`; browser uses the DOM config; Node uses the Node config, targets `node22`, and declares `engines.node >=22`.
 - Select dual ESM/CommonJS output only for an explicit CommonJS compatibility requirement. Dual builds must use fixed extensions so package exports remain deterministic.
 - Every publishable package must declare `sideEffects`, exports, description, repository metadata, a package-local README, and a package-local LICENSE. Node engines are required only for Node-targeted packages.
 - ESLint via `@deviltea/eslint-config` (flat config in `eslint.config.js`); tabs for indentation, single quotes, no semicolons.
 - `pnpm lint` is a read-only CI gate. Use `pnpm lint:fix` or the pre-commit hook to modify files.
-- tsconfigs extend `@deviltea/tsconfig/base` and use composite project references; each package typechecks `src` and `tests` with separate tsconfig projects.
+- tsconfigs use composite project references; each package typechecks `src` and `tests` with separate tsconfig projects.
 - Pre-commit hook (simple-git-hooks + lint-staged) runs `eslint --fix` on staged files.
 - New dependencies: add the version to the `catalog:` in `pnpm-workspace.yaml`, then reference it as `"catalog:"` in the package's `package.json`.
 - File-system automation must use Node APIs rather than POSIX-only shell commands. Never overwrite an existing package directory implicitly.
@@ -69,7 +69,7 @@ pnpm package:smoke
 - Package tests live in `packages/<pkg>/tests/*.test.ts`; script integration tests use temporary directories and must cover destructive or metadata-changing behavior.
 - Coverage is opt-in through `pnpm test:coverage`, so ordinary tests and watch mode do not pay the instrumentation cost.
 - `pnpm package:smoke` loads built packages through Node ESM and CJS where supported, then typechecks consumers using TypeScript `Bundler` and `NodeNext` resolution.
-- Scaffold tests must cover Node.js, browser, and platform-neutral runtime profiles plus ESM-only and dual-format manifests and build configuration.
+- Scaffold tests must cover Node.js, browser, and platform-neutral runtime profiles plus ESM-only and dual-format manifests, TypeScript environments, and build configuration.
 - CI runs build and tests on Node 24 across Ubuntu, Windows, and macOS, plus the stricter package and documentation checks on Ubuntu.
 
 ## Release
