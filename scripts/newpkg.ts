@@ -43,6 +43,33 @@ if (isCancel(description)) {
 	process.exit(0)
 }
 
+const runtime = await select({
+	message: 'Runtime target',
+	initialValue: 'neutral',
+	options: [
+		{
+			value: 'neutral',
+			label: 'Platform-neutral',
+			hint: 'recommended for shared libraries',
+		},
+		{
+			value: 'browser',
+			label: 'Browser',
+			hint: 'browser globals and bundlers',
+		},
+		{
+			value: 'node',
+			label: 'Node.js 22+',
+			hint: 'Node.js APIs and runtime targeting',
+		},
+	],
+})
+
+if (isCancel(runtime)) {
+	cancel('Operation cancelled.')
+	process.exit(0)
+}
+
 const format = await select({
 	message: 'Published module format',
 	initialValue: 'esm',
@@ -70,6 +97,7 @@ try {
 		directoryName: packageDirectory,
 		packageName,
 		description,
+		runtime,
 		format,
 	})
 	outro(`Package "${packageName}" created in packages/${packageDirectory}.`)
