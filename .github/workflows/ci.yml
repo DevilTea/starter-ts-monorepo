@@ -1,30 +1,31 @@
 name: CI
 
 on:
+  push:
+    branches:
+      - main
+
   pull_request:
     branches:
       - main
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  apply-reviewed-fixes:
-    if: >-
-      github.event.pull_request.head.repo.full_name == github.repository
+  check:
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
     steps:
-      - name: Checkout pull request branch
+      - name: Checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
-          ref: ${{ github.event.pull_request.head.ref }}
-          persist-credentials: true
+          persist-credentials: false
 
       - name: Setup PNPM
         uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
@@ -33,22 +34,11 @@ jobs:
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
           node-version: 24
-          package-manager-cache: false
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-
-      - name: Apply reviewed corrections
-        run: node scripts/apply-review-fixes.cjs
-
-      - name: Remove temporary review helpers
-        run: |
-          rm -f scripts/apply-review-fixes.cjs
-          rm -f .github/workflows/apply-review-fixes.yml
-          rm -f .github/apply-review-fixes.trigger
-
-      - name: Format corrected files
-        run: pnpm exec eslint --fix package.json README.md AGENTS.md scripts/init-template.ts scripts/newpkg.ts scripts/template.ts scripts/template.test.ts packages/pkg-placeholder/tsconfig.package.json
 
       - name: Lint
         run: pnpm lint
@@ -59,20 +49,52 @@ jobs:
       - name: Typecheck project references
         run: pnpm typecheck:build
 
+      - name: Test with coverage
+        run: pnpm test:coverage
+
+      - name: Build packages
+        run: pnpm build
+
+      - name: Validate publish artifacts
+        run: pnpm publint && pnpm package:smoke
+
+      - name: Build documentation
+        run: pnpm docs:build
+
+  test:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [24]
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Setup PNPM
+        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+
+      - name: Setup Node
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: ${{ matrix.node }}
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build packages
+        run: pnpm build
+
       - name: Test
         run: pnpm test
 
-      - name: Commit reviewed fixes
-        env:
-          HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add package.json README.md AGENTS.md scripts/init-template.ts scripts/newpkg.ts scripts/template.ts scripts/template.test.ts packages/pkg-placeholder/tsconfig.package.json
-          if git diff --cached --quiet; then
-            echo "No reviewed fixes to commit."
-            exit 0
-          fi
-          git diff --cached --check
-          git commit -m "fix: align runtime profiles with TypeScript environments"
-          git push origin "HEAD:${HEAD_BRANCH}"
+      - name: Validate package consumers
+        run: pnpm package:smoke
