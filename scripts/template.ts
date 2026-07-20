@@ -27,8 +27,12 @@ interface TsConfig {
 	[key: string]: unknown
 }
 
+export type PackageFormat = 'dual' | 'esm'
+
 export interface CreatePackageOptions {
+	description: string
 	directoryName: string
+	format: PackageFormat
 	packageName: string
 }
 
@@ -37,6 +41,7 @@ export interface InitializeTemplateOptions {
 	authorName: string
 	description: string
 	packageDirectory: string
+	packageFormat: PackageFormat
 	packageName: string
 	repositoryName: string
 	repositoryOwner: string
@@ -93,6 +98,8 @@ export async function createPackage(root: string, options: CreatePackageOptions)
 	const packageNameError = validatePackageName(options.packageName)
 	if (packageNameError)
 		throw new Error(packageNameError)
+	if (!options.description.trim())
+		throw new Error('Package description is required.')
 
 	const packagesRoot = join(root, 'packages')
 	const packageDirectory = join(packagesRoot, options.directoryName)
@@ -100,6 +107,7 @@ export async function createPackage(root: string, options: CreatePackageOptions)
 		throw new Error(`Package directory already exists: packages/${options.directoryName}`)
 
 	const rootPackage = await readJson<PackageJson>(join(root, 'package.json'))
+	const rootLicense = await readFile(join(root, 'LICENSE'), 'utf8')
 	const rootTsConfigPath = join(root, 'tsconfig.json')
 	const rootTsConfig = await readJson<TsConfig>(rootTsConfigPath)
 	const referencePath = `./packages/${options.directoryName}/tsconfig.json`
@@ -111,7 +119,7 @@ export async function createPackage(root: string, options: CreatePackageOptions)
 	let moved = false
 
 	try {
-		const files = createPackageFiles(rootPackage, options)
+		const files = createPackageFiles(rootPackage, options, rootLicense)
 		for (const [relativePath, content] of Object.entries(files)) {
 			const filePath = join(temporaryDirectory, relativePath)
 			await mkdir(dirname(filePath), { recursive: true })
@@ -207,8 +215,16 @@ export async function initializeTemplate(root: string, options: InitializeTempla
 		bugs: {
 			url: `${repositoryUrl}/issues`,
 		},
+		keywords: ['typescript'],
 		sideEffects: false,
+		engines: {
+			node: '>=22',
+		},
+		publishConfig: {
+			access: 'public',
+		},
 	})
+	applyPackageFormat(packageJson, options.packageFormat)
 
 	rootTsConfig.references = (rootTsConfig.references ?? []).map(reference => (
 		reference.path === './packages/pkg-placeholder/tsconfig.json'
@@ -216,48 +232,49 @@ export async function initializeTemplate(root: string, options: InitializeTempla
 			: reference
 	))
 
+	const license = createMitLicense(options.authorName.trim())
 	await writeJson(rootPackagePath, rootPackage)
 	await writeJson(packageJsonPath, packageJson)
 	await writeJson(rootTsConfigPath, rootTsConfig)
+	await writeFile(join(root, 'LICENSE'), license)
+	await writeFile(join(placeholderDirectory, 'LICENSE'), license)
+	await writeFile(
+		join(placeholderDirectory, 'README.md'),
+		createPackageReadme(options.packageName, options.description),
+	)
+	await writeFile(
+		join(placeholderDirectory, 'tsdown.config.ts'),
+		createTsdownConfig(options.packageFormat),
+	)
 	await updateTemplateTextFiles(root, options, repositoryUrl, author)
 
 	if (targetDirectory !== placeholderDirectory)
 		await rename(placeholderDirectory, targetDirectory)
 }
 
-function createPackageFiles(rootPackage: PackageJson, options: CreatePackageOptions): Record<string, string> {
-	const repository = normalizeRepository(rootPackage.repository, options.directoryName)
-	const bugs = normalizeBugs(rootPackage.bugs)
-	const packageJson = {
+function createPackageFiles(
+	rootPackage: PackageJson,
+	options: CreatePackageOptions,
+	license: string,
+): Record<string, string> {
+	const packageJson: PackageJson = {
 		name: options.packageName,
 		type: 'module',
 		version: rootPackage.version ?? '0.0.0',
-		description: '',
+		description: options.description.trim(),
 		author: rootPackage.author,
 		license: rootPackage.license ?? 'MIT',
 		homepage: rootPackage.homepage,
-		repository,
-		bugs,
-		keywords: [],
+		repository: normalizeRepository(rootPackage.repository, options.directoryName),
+		bugs: normalizeBugs(rootPackage.bugs),
+		keywords: ['typescript'],
 		sideEffects: false,
+		engines: {
+			node: '>=22',
+		},
 		publishConfig: {
 			access: rootPackage.publishConfig?.access ?? 'public',
 		},
-		exports: {
-			'.': {
-				import: {
-					types: './dist/index.d.mts',
-					default: './dist/index.mjs',
-				},
-				require: {
-					types: './dist/index.d.cts',
-					default: './dist/index.cjs',
-				},
-			},
-		},
-		main: './dist/index.cjs',
-		module: './dist/index.mjs',
-		types: './dist/index.d.mts',
 		files: ['dist'],
 		scripts: {
 			'build': 'tsdown',
@@ -267,23 +284,13 @@ function createPackageFiles(rootPackage: PackageJson, options: CreatePackageOpti
 			'typecheck:test': 'tsc --project ./tsconfig.tests.json --noEmit',
 		},
 	}
+	applyPackageFormat(packageJson, options.format)
 
 	return {
+		'LICENSE': license,
+		'README.md': createPackageReadme(options.packageName, options.description),
 		'package.json': JSON.stringify(packageJson, null, '\t'),
-		'tsdown.config.ts': `
-import { defineConfig } from 'tsdown'
-
-export default defineConfig({
-	entry: ['src/index.ts'],
-	format: ['esm', 'cjs'],
-	dts: {
-		tsconfig: 'tsconfig.package.json',
-		compilerOptions: {
-			composite: false,
-		},
-	},
-	clean: true,
-})`,
+		'tsdown.config.ts': createTsdownConfig(options.format),
 		'src/index.ts': 'export {}',
 		'tests/some.test.ts': `
 import { describe, expect, it } from 'vitest'
@@ -329,14 +336,119 @@ export default defineProject({})`,
 	}
 }
 
+function applyPackageFormat(packageJson: PackageJson, format: PackageFormat): void {
+	delete packageJson.exports
+	delete packageJson.main
+	delete packageJson.module
+	delete packageJson.types
+
+	if (format === 'esm') {
+		Object.assign(packageJson, {
+			exports: {
+				'.': {
+					types: './dist/index.d.ts',
+					default: './dist/index.js',
+				},
+			},
+			main: './dist/index.js',
+			module: './dist/index.js',
+			types: './dist/index.d.ts',
+		})
+		return
+	}
+
+	Object.assign(packageJson, {
+		exports: {
+			'.': {
+				import: {
+					types: './dist/index.d.mts',
+					default: './dist/index.mjs',
+				},
+				require: {
+					types: './dist/index.d.cts',
+					default: './dist/index.cjs',
+				},
+			},
+		},
+		main: './dist/index.cjs',
+		module: './dist/index.mjs',
+		types: './dist/index.d.mts',
+	})
+}
+
+function createTsdownConfig(format: PackageFormat): string {
+	const formats = format === 'esm' ? "['esm']" : "['esm', 'cjs']"
+	return `import { defineConfig } from 'tsdown'
+
+export default defineConfig({
+	entry: ['src/index.ts'],
+	format: ${formats},
+	dts: {
+		tsconfig: 'tsconfig.package.json',
+		compilerOptions: {
+			composite: false,
+		},
+	},
+	clean: true,
+})
+`
+}
+
+function createPackageReadme(packageName: string, description: string): string {
+	return `# ${packageName}
+
+${description.trim()}
+
+## Install
+
+\`\`\`bash
+pnpm add ${packageName}
+\`\`\`
+
+## Usage
+
+\`\`\`ts
+import {} from '${packageName}'
+\`\`\`
+
+## License
+
+[MIT](./LICENSE)
+`
+}
+
+function createMitLicense(authorName: string): string {
+	return `MIT License
+
+Copyright (c) ${new Date().getUTCFullYear()} ${authorName}
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+`
+}
+
 async function updateTemplateTextFiles(
 	root: string,
 	options: InitializeTemplateOptions,
 	repositoryUrl: string,
 	author: string,
 ): Promise<void> {
-	const readmePath = join(root, 'README.md')
-	await writeFile(readmePath, createInitializedReadme(options, repositoryUrl))
+	await writeFile(join(root, 'README.md'), createInitializedReadme(options, repositoryUrl))
 
 	const replacements: Array<[string, string]> = [
 		['@deviltea/pkg-placeholder', options.packageName],
@@ -363,7 +475,7 @@ async function updateTemplateTextFiles(
 			content = content.replace('https://github.com/vuejs/vitepress', repositoryUrl)
 		if (relativePath === 'AGENTS.md') {
 			content = content
-				.replace(/Starter template for a TypeScript pnpm monorepo[^\n]+\n/, `${options.repositoryName} is a TypeScript pnpm monorepo publishing packages to npm, with a VitePress documentation site. Requires Node >=24 and pnpm 10.34.4. All dependency versions are managed centrally through the catalog in pnpm-workspace.yaml.\n`)
+				.replace(/Starter template for a TypeScript pnpm monorepo[^\n]+\n/, `${options.repositoryName} is a TypeScript pnpm monorepo publishing packages to npm, with a VitePress documentation site. Requires Node >=22.14.0 and pnpm 10.34.4. All dependency versions are managed centrally through the catalog in pnpm-workspace.yaml.\n`)
 				.replace(/- This is a template:[^\n]+\n/, '')
 		}
 
@@ -380,19 +492,35 @@ ${options.description.trim()}
 
 - [\`${options.packageName}\`](./packages/${options.packageDirectory})
 
+## Requirements
+
+- Node.js 22.14.0 or newer
+- pnpm 10.34.4 through Corepack
+
 ## Development
 
 \`\`\`bash
+corepack enable
 pnpm install
 pnpm lint
 pnpm typecheck
-pnpm test
+pnpm typecheck:build
+pnpm test:coverage
 pnpm build
+pnpm publint
+pnpm package:smoke
+pnpm docs:build
 \`\`\`
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for pull request requirements and [SECURITY.md](./SECURITY.md) for private vulnerability reporting.
+
+## Release setup
+
+Configure GitHub Pages, a protected \`release\` environment, and npm trusted publishing for \`release.yml\` before running the release workflows.
 
 ## License
 
-[MIT](./LICENSE) License © 2023-PRESENT [${options.authorName.trim()}](https://github.com/${options.repositoryOwner})
+[MIT](./LICENSE) License © ${new Date().getUTCFullYear()} [${options.authorName.trim()}](https://github.com/${options.repositoryOwner})
 
 Repository: ${repositoryUrl}
 `
