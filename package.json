@@ -27,7 +27,7 @@
 		"newpkg": "tsx ./scripts/newpkg.ts",
 		"package:smoke": "tsx ./scripts/validate-packages.ts",
 		"publint": "pnpm -r --filter='./packages/*' exec publint --strict --pack pnpm",
-		"publish:packages": "pnpm -r --filter='./packages/*' publish",
+		"publish:packages": "tsx ./scripts/publish-packages.ts",
 		"docs:dev": "pnpm -r --filter=./docs run dev",
 		"docs:build": "pnpm -r --filter=./docs run build",
 		"docs:preview": "pnpm -r --filter=./docs run preview",

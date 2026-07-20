@@ -18,10 +18,12 @@ scripts/init-template.ts      # Interactive repository initializer
 scripts/newpkg.ts             # Interactive scaffold for another package
 scripts/template.ts           # Tested file-system and metadata operations used by both CLIs
 scripts/validate-packages.ts  # Runtime and TypeScript consumer validation for built packages
+scripts/release.ts            # Tested release package discovery and registry-result classification
+scripts/publish-packages.ts   # Resumable npm trusted-publishing runner
 vitest.config.ts              # Package projects plus script integration tests
 eslint.config.js              # @deviltea/eslint-config
 tsconfig.json                 # Root of the TypeScript project-reference graph
-.github/workflows/            # ci, release, deploy-docs, security-audit
+.github/workflows/            # CI, release preparation/publishing, docs, security audit
 ```
 
 ## Setup Commands
@@ -84,7 +86,10 @@ pnpm package:smoke
 
 ## Release
 
-- Releases run in CI: trigger the `Release` workflow (`workflow_dispatch`) with a `bump_type` (patch/minor/major). It validates (`pnpm build && pnpm publint && pnpm typecheck && pnpm test`), bumps all packages with `bumpp -r`, publishes `packages/*` to npm via trusted publishing (OIDC), then generates GitHub release notes with `changelogithub`.
+- Run `Prepare Release` from `main` with a patch, minor, or major bump. It executes the full quality gate, uses `bumpp -r` to create and push one version commit and `v*` tag, verifies the remote tag, and uploads release metadata.
+- `Release` runs from the successful `Prepare Release` workflow via `workflow_run`. It downloads the metadata, checks out and verifies the immutable tag, repeats the full quality gate, publishes missing package versions with npm trusted publishing, and creates GitHub release notes with `gh release create`.
+- Configure npm trusted publishing for workflow filename `release.yml`, environment `release`, and allowed action `npm publish`. Do not add an `NPM_TOKEN`.
+- Publishing is resumable: versions already present on npm and existing GitHub releases are skipped. For recovery, manually run `Release` with the existing tag. Do not rerun `Prepare Release` to retry a publish.
 - Docs deploy automatically to GitHub Pages on every push to `main` (`deploy-docs.yml`).
 - Weekly `security-audit.yml` runs `pnpm audit --audit-level=moderate` (Sundays 21:00 UTC).
 
