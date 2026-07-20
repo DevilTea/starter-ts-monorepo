@@ -4,6 +4,8 @@ import { cancel, intro, isCancel, outro, select, text } from '@clack/prompts'
 import {
 	createPackage,
 	getDefaultPackageName,
+	type PackageFormat,
+	type PackageRuntime,
 	validatePackageDirectoryName,
 	validatePackageName,
 } from './template.js'
@@ -43,7 +45,7 @@ if (isCancel(description)) {
 	process.exit(0)
 }
 
-const runtime = await select({
+const runtime = await select<PackageRuntime>({
 	message: 'Runtime target',
 	initialValue: 'neutral',
 	options: [
@@ -70,7 +72,7 @@ if (isCancel(runtime)) {
 	process.exit(0)
 }
 
-const format = await select({
+const format = await select<PackageFormat>({
 	message: 'Published module format',
 	initialValue: 'esm',
 	options: [
