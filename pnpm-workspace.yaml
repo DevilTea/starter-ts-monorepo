@@ -7,6 +7,10 @@ blockExoticSubdeps: true
 strictDepBuilds: true
 shellEmulator: true
 trustPolicy: no-downgrade
+# Vetted Node.js-owned type package required by @types/node 22.x; this historical
+# version predates consistent npm provenance and is exempted narrowly by version.
+trustPolicyExclude:
+  - 'undici-types@6.21.0'
 packages:
   - docs
   - packages/*
