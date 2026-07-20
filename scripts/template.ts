@@ -455,7 +455,8 @@ function getRuntimeDescription(runtime: PackageRuntime): string {
 }
 
 function createMitLicense(authorName: string): string {
-	const currentYear = new Date().getUTCFullYear()
+	const currentYear = new Date()
+		.getUTCFullYear()
 	return `MIT License
 
 Copyright (c) ${currentYear} ${authorName}
@@ -522,7 +523,8 @@ async function updateTemplateTextFiles(
 }
 
 function createInitializedReadme(options: InitializeTemplateOptions, repositoryUrl: string): string {
-	const currentYear = new Date().getUTCFullYear()
+	const currentYear = new Date()
+		.getUTCFullYear()
 	return `# ${options.repositoryName}
 
 ${options.description.trim()}
