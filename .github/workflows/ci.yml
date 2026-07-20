@@ -40,21 +40,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Generate lint fixes for review
-        run: pnpm lint:fix
-
-      - name: Upload lint-fixed release files
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: lint-fixed-release-files
-          path: |
-            scripts/publish-packages.ts
-            scripts/release.test.ts
-            scripts/release.ts
-          retention-days: 1
-
-      - name: Verify lint does not modify files
-        run: git diff --exit-code
+      - name: Lint
+        run: pnpm lint
 
       - name: Typecheck workspaces
         run: pnpm typecheck
