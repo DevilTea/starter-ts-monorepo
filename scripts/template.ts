@@ -44,8 +44,8 @@ export interface InitializeTemplateOptions {
 
 const packageDirectoryPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 const packageNamePattern = /^(?:@[a-z0-9][a-z0-9._-]*\/)?[a-z0-9][a-z0-9._-]*$/
-const repositoryNamePattern = /^[A-Za-z0-9._-]+$/
-const repositoryOwnerPattern = /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$/
+const repositoryNamePattern = /^[\w.-]+$/
+const repositoryOwnerPattern = /^[A-Z0-9](?:[A-Z0-9-]{0,37}[A-Z0-9])?$/i
 
 export function validatePackageDirectoryName(value: string): string | undefined {
 	if (!value)
@@ -256,9 +256,9 @@ function createPackageFiles(rootPackage: PackageJson, options: CreatePackageOpti
 		types: './dist/index.d.mts',
 		files: ['dist'],
 		scripts: {
-			build: 'tsdown',
+			'build': 'tsdown',
 			'build:pack': 'pnpm build && pnpm pack',
-			typecheck: 'pnpm typecheck:package && pnpm typecheck:test',
+			'typecheck': 'pnpm typecheck:package && pnpm typecheck:test',
 			'typecheck:package': 'tsc --project ./tsconfig.package.json --noEmit',
 			'typecheck:test': 'tsc --project ./tsconfig.tests.json --noEmit',
 		},
