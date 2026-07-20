@@ -1,6 +1,6 @@
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
-import { cancel, confirm, intro, isCancel, outro, text } from '@clack/prompts'
+import { cancel, confirm, intro, isCancel, outro, select, text } from '@clack/prompts'
 import {
 	initializeTemplate,
 	validatePackageDirectoryName,
@@ -52,6 +52,25 @@ const packageName = await text({
 if (isCancel(packageName))
 	exitCancelled()
 
+const packageFormat = await select({
+	message: 'Initial package module format',
+	initialValue: 'esm',
+	options: [
+		{
+			value: 'esm',
+			label: 'ESM only',
+			hint: 'recommended for new libraries',
+		},
+		{
+			value: 'dual',
+			label: 'ESM + CommonJS',
+			hint: 'use only when CommonJS consumers are required',
+		},
+	],
+})
+if (isCancel(packageFormat))
+	exitCancelled()
+
 const authorName = await text({
 	message: 'Author name',
 	initialValue: repositoryOwner,
@@ -79,6 +98,7 @@ try {
 		description,
 		packageDirectory,
 		packageName,
+		packageFormat,
 		authorName,
 		authorEmail: authorEmail || undefined,
 	})
