@@ -1,12 +1,14 @@
 {
-	"extends": [
-		"./docs/tsconfig.json",
-		"./packages/pkg-placeholder/tsconfig.json"
-	],
+	"files": [],
 	"references": [
+		{
+			"path": "./docs/tsconfig.json"
+		},
+		{
+			"path": "./packages/pkg-placeholder/tsconfig.json"
+		},
 		{
 			"path": "./tsconfig.scripts.json"
 		}
-	],
-	"files": []
+	]
 }
