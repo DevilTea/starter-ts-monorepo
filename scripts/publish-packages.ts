@@ -1,6 +1,7 @@
+import type { CommandResult } from './release.js'
 import { spawn } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
-import { discoverPublishablePackages, isPackageVersionPublished, type CommandResult } from './release.js'
+import { discoverPublishablePackages, isPackageVersionPublished } from './release.js'
 
 const root = fileURLToPath(new URL('..', import.meta.url))
 const packages = await discoverPublishablePackages(root)
