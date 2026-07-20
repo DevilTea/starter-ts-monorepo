@@ -1,12 +1,11 @@
 {
 	"name": "@deviltea/pkg-placeholder",
 	"type": "module",
-	"publishConfig": {
-		"access": "public"
-	},
 	"version": "0.0.0",
-	"author": "DevilTea <ch19980814@gmail.com>",
+	"description": "_description_",
+	"author": "DevilTea <ch870814@gmail.com>",
 	"license": "MIT",
+	"homepage": "https://github.com/DevilTea/repo-placeholder#readme",
 	"repository": {
 		"type": "git",
 		"url": "git+https://github.com/DevilTea/repo-placeholder.git",
@@ -15,7 +14,16 @@
 	"bugs": {
 		"url": "https://github.com/DevilTea/repo-placeholder/issues"
 	},
-	"keywords": [],
+	"keywords": [
+		"typescript"
+	],
+	"sideEffects": false,
+	"engines": {
+		"node": ">=22"
+	},
+	"publishConfig": {
+		"access": "public"
+	},
 	"exports": {
 		".": {
 			"import": {
@@ -28,9 +36,9 @@
 			}
 		}
 	},
-	"main": "dist/index.cjs",
-	"module": "dist/index.mjs",
-	"types": "dist/index.d.cts",
+	"main": "./dist/index.cjs",
+	"module": "./dist/index.mjs",
+	"types": "./dist/index.d.mts",
 	"files": [
 		"dist"
 	],
