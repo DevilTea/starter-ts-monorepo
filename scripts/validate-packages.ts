@@ -14,6 +14,7 @@ interface PackageManifest {
 
 const root = fileURLToPath(new URL('..', import.meta.url))
 const packagesRoot = join(root, 'packages')
+const typeScriptCli = join(root, 'node_modules', 'typescript', 'bin', 'tsc')
 const packageDirectories = (await readdir(packagesRoot, { withFileTypes: true }))
 	.filter(entry => entry.isDirectory())
 	.map(entry => join(packagesRoot, entry.name))
@@ -107,7 +108,7 @@ async function validateTypeScriptConsumers(
 		},
 		files: ['./consumer.ts'],
 	})
-	await runPnpm(['exec', 'tsc', '--project', join(temporaryRoot, 'tsconfig.bundler.json')], root)
+	await runTypeScript(join(temporaryRoot, 'tsconfig.bundler.json'))
 
 	const nodeNextFiles = ['./consumer.ts']
 	if (supportsRequire) {
@@ -128,7 +129,7 @@ async function validateTypeScriptConsumers(
 		},
 		files: nodeNextFiles,
 	})
-	await runPnpm(['exec', 'tsc', '--project', join(temporaryRoot, 'tsconfig.nodenext.json')], root)
+	await runTypeScript(join(temporaryRoot, 'tsconfig.nodenext.json'))
 }
 
 function collectExportTargets(value: unknown, targets = new Set<string>()): Set<string> {
@@ -165,8 +166,8 @@ async function writeJson(filePath: string, value: unknown): Promise<void> {
 	await writeFile(filePath, `${JSON.stringify(value, null, '\t')}\n`)
 }
 
-async function runPnpm(arguments_: string[], cwd: string): Promise<void> {
-	await run(process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm', arguments_, cwd)
+async function runTypeScript(projectPath: string): Promise<void> {
+	await run(process.execPath, [typeScriptCli, '--project', projectPath], root)
 }
 
 async function run(command: string, arguments_: string[], cwd: string): Promise<void> {
