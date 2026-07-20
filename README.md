@@ -51,7 +51,11 @@ The initializer and `pnpm newpkg` ask for two independent choices:
 - **Runtime:** platform-neutral for shared libraries, browser for browser-oriented packages, or Node.js 22+ for packages that use Node.js APIs.
 - **Module format:** ESM-only by default, or dual ESM/CommonJS when legacy CommonJS consumers are an explicit requirement.
 
-Only the Node.js runtime profile adds an `engines.node` requirement. Browser and platform-neutral packages remain usable outside Node.js when their source code and dependencies are compatible.
+The selected runtime controls both the tsdown platform/target and the TypeScript environment:
+
+- Platform-neutral packages use the base config with only `ESNext` libraries and no ambient platform types.
+- Browser packages use DOM libraries and browser-oriented builds.
+- Node.js packages use Node types, target Node.js 22, and declare `engines.node >=22`.
 
 ## Repository setup checklist
 
