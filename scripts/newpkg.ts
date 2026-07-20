@@ -1,7 +1,12 @@
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
-import { cancel, intro, isCancel, outro, text } from '@clack/prompts'
-import { createPackage, getDefaultPackageName, validatePackageDirectoryName, validatePackageName } from './template.js'
+import { cancel, intro, isCancel, outro, select, text } from '@clack/prompts'
+import {
+	createPackage,
+	getDefaultPackageName,
+	validatePackageDirectoryName,
+	validatePackageName,
+} from './template.js'
 
 const root = fileURLToPath(new URL('..', import.meta.url))
 
@@ -28,10 +33,44 @@ if (isCancel(packageName)) {
 	process.exit(0)
 }
 
+const description = await text({
+	message: 'Package description',
+	validate: value => value?.trim() ? undefined : 'Required.',
+})
+
+if (isCancel(description)) {
+	cancel('Operation cancelled.')
+	process.exit(0)
+}
+
+const format = await select({
+	message: 'Published module format',
+	initialValue: 'esm',
+	options: [
+		{
+			value: 'esm',
+			label: 'ESM only',
+			hint: 'recommended for new libraries',
+		},
+		{
+			value: 'dual',
+			label: 'ESM + CommonJS',
+			hint: 'use only when CommonJS consumers are required',
+		},
+	],
+})
+
+if (isCancel(format)) {
+	cancel('Operation cancelled.')
+	process.exit(0)
+}
+
 try {
 	await createPackage(root, {
 		directoryName: packageDirectory,
 		packageName,
+		description,
+		format,
 	})
 	outro(`Package "${packageName}" created in packages/${packageDirectory}.`)
 }
