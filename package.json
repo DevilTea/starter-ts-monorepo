@@ -16,7 +16,7 @@
 	"keywords": [],
 	"sideEffects": false,
 	"engines": {
-		"node": ">=24"
+		"node": ">=22.14.0"
 	},
 	"config": {
 		"packageScope": "@deviltea"
@@ -49,16 +49,12 @@
 		"bumpp": "catalog:",
 		"eslint": "catalog:",
 		"lint-staged": "catalog:",
-		"pathe": "catalog:",
-		"pkg-size": "catalog:",
 		"publint": "catalog:",
-		"rimraf": "catalog:",
 		"simple-git-hooks": "catalog:",
 		"tsdown": "catalog:",
 		"tsx": "catalog:",
 		"typescript": "catalog:",
-		"vitest": "catalog:",
-		"zx": "catalog:"
+		"vitest": "catalog:"
 	},
 	"simple-git-hooks": {
 		"pre-commit": "pnpm lint-staged"
