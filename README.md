@@ -1,6 +1,11 @@
 # starter-ts-monorepo
 
-A TypeScript pnpm monorepo starter for publishing npm packages with ESM/CJS output, Vitest, VitePress, and GitHub Actions.
+A TypeScript pnpm monorepo starter for publishing ESM-only or ESM/CommonJS npm packages with Vitest, VitePress, and hardened GitHub Actions.
+
+## Requirements
+
+- Node.js 22.14.0 or newer
+- pnpm 10.34.4 through Corepack
 
 ## Use this template
 
@@ -18,7 +23,7 @@ A TypeScript pnpm monorepo starter for publishing npm packages with ESM/CJS outp
    pnpm init:template
    ```
 
-   It updates repository and package metadata, renames `packages/pkg-placeholder`, rewrites TypeScript project references, and replaces the starter documentation without modifying `@deviltea/eslint-config` or `@deviltea/tsconfig`.
+   It updates repository and package metadata, selects ESM-only or dual ESM/CommonJS output, renames `packages/pkg-placeholder`, creates package-local README and LICENSE files, rewrites TypeScript project references, and replaces starter documentation without modifying `@deviltea/eslint-config` or `@deviltea/tsconfig`.
 
 4. Refresh the lockfile after the workspace path has been renamed:
 
@@ -39,13 +44,15 @@ A TypeScript pnpm monorepo starter for publishing npm packages with ESM/CJS outp
    pnpm docs:build
    ```
 
-6. Configure GitHub Pages for the documentation workflow.
-7. Create a GitHub environment named `release`. Add approval and tag/branch protection rules as required by the repository.
-8. Configure npm trusted publishing for every public package with:
-   - the generated GitHub repository owner and name
-   - workflow filename `release.yml`
-   - environment `release`
-   - allowed action `npm publish`
+## Repository setup checklist
+
+- Enable GitHub Pages with **GitHub Actions** as the source.
+- Protect `main` with required CI checks and pull requests.
+- Create a protected GitHub environment named `release`.
+- Configure npm trusted publishing for each public package with workflow `release.yml`, environment `release`, and action `npm publish`.
+- Enable Dependabot alerts, secret scanning, push protection, and code scanning where available.
+- Enable private vulnerability reporting so `SECURITY.md` can direct reporters to a confidential channel.
+- Confirm the source repository itself has GitHub's **Template repository** setting enabled.
 
 The release workflow uses OIDC and does not require an `NPM_TOKEN` repository secret.
 
@@ -55,7 +62,11 @@ The release workflow uses OIDC and does not require an `NPM_TOKEN` repository se
 pnpm newpkg
 ```
 
-The scaffold refuses to overwrite an existing directory and adds the package to the root TypeScript project-reference graph.
+The scaffold requests package metadata and output format, refuses to overwrite an existing directory, copies the repository license, creates a package-local README, and adds the package to the root TypeScript project-reference graph. ESM-only is the recommended default; choose dual output only when CommonJS consumers are required.
+
+## Contributing and security
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for the complete quality gate. Report vulnerabilities privately according to [SECURITY.md](./SECURITY.md), not through a public issue.
 
 ## Release
 
