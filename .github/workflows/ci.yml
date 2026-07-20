@@ -41,12 +41,26 @@ jobs:
       - name: Apply reviewed corrections
         run: node scripts/apply-review-fixes.cjs
 
-      - name: Format and validate corrections
+      - name: Remove temporary review helpers
         run: |
-          pnpm exec eslint --fix package.json README.md AGENTS.md scripts/template.ts scripts/template.test.ts packages/pkg-placeholder/tsconfig.package.json
-          pnpm lint
-          pnpm typecheck
-          pnpm test
+          rm -f scripts/apply-review-fixes.cjs
+          rm -f .github/workflows/apply-review-fixes.yml
+          rm -f .github/apply-review-fixes.trigger
+
+      - name: Format corrected files
+        run: pnpm exec eslint --fix package.json README.md AGENTS.md scripts/template.ts scripts/template.test.ts packages/pkg-placeholder/tsconfig.package.json
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck workspaces
+        run: pnpm typecheck
+
+      - name: Typecheck project references
+        run: pnpm typecheck:build
+
+      - name: Test
+        run: pnpm test
 
       - name: Commit review fixes
         env:
