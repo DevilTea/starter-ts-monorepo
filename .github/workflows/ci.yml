@@ -41,7 +41,15 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Lint
-        run: pnpm lint
+        run: pnpm exec eslint . --format json --output-file lint-report.json
+
+      - name: Upload lint report
+        if: always() && hashFiles('lint-report.json') != ''
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: lint-report
+          path: lint-report.json
+          retention-days: 1
 
       - name: Typecheck workspaces
         run: pnpm typecheck
