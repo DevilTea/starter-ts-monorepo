@@ -2,19 +2,19 @@
 
 ## Project Overview
 
-Starter template for a TypeScript pnpm monorepo publishing packages to npm, with a VitePress docs site. Ships one placeholder package (`@deviltea/pkg-placeholder`). Initialize a generated repository with `pnpm init:template`; do not globally replace `deviltea`, because the toolchain intentionally depends on `@deviltea/eslint-config` and `@deviltea/tsconfig`. Requires Node >=22.14.0 and pnpm 10.34.4 (pinned via `packageManager`). All dependency versions are managed centrally through the `catalog:` in `pnpm-workspace.yaml — packages declare dependencies as `"catalog:"`.
+Starter template for a TypeScript pnpm monorepo publishing packages to npm, with a VitePress docs site. Ships one runtime-neutral placeholder package (`@deviltea/pkg-placeholder`). Initialize a generated repository with `pnpm init:template`; do not globally replace `deviltea`, because the toolchain intentionally depends on `@deviltea/eslint-config` and `@deviltea/tsconfig`. Requires Node >=22.14.0 and pnpm 10.34.4 (pinned via `packageManager`). All dependency versions are managed centrally through the `catalog:` in `pnpm-workspace.yaml`; packages declare dependencies as `"catalog:"`.
 
 **Repository structure:**
 
 ```text
 pnpm-workspace.yaml           # Workspace globs, version catalog, supply-chain security settings
 packages/
-└── pkg-placeholder/          # Initial publishable package template
+└── pkg-placeholder/          # Runtime-neutral dual-format package template
     ├── README.md             # Package-local npm documentation
     ├── LICENSE               # Package-local license included in npm tarballs
     ├── src/index.ts          # Source
     ├── tests/                # Vitest tests
-    └── tsdown.config.ts      # ESM-only or dual-format build config
+    └── tsdown.config.ts      # Runtime target and ESM-only or dual-format build config
 docs/                         # VitePress docs site (deployed to GitHub Pages)
 scripts/init-template.ts      # Interactive repository initializer
 scripts/newpkg.ts             # Interactive package scaffold
@@ -51,8 +51,11 @@ pnpm package:smoke
 
 ## Code Style
 
-- TypeScript and ESM-first. New packages default to ESM-only; select dual ESM/CommonJS output only for an explicit compatibility requirement.
-- Every publishable package must declare `sideEffects`, Node engines, exports, description, repository metadata, a package-local README, and a package-local LICENSE.
+- TypeScript and ESM-first. New packages default to platform-neutral ESM-only output.
+- Runtime profiles are independent of module format: `neutral`, `browser`, or `node`; and `esm` or `dual`.
+- Select Node.js runtime only when the package uses or intentionally targets Node.js APIs. Only that profile declares `engines.node` and targets `node22`.
+- Select dual ESM/CommonJS output only for an explicit CommonJS compatibility requirement. Dual builds must use fixed extensions so package exports remain deterministic.
+- Every publishable package must declare `sideEffects`, exports, description, repository metadata, a package-local README, and a package-local LICENSE. Node engines are required only for Node-targeted packages.
 - ESLint via `@deviltea/eslint-config` (flat config in `eslint.config.js`); tabs for indentation, single quotes, no semicolons.
 - `pnpm lint` is a read-only CI gate. Use `pnpm lint:fix` or the pre-commit hook to modify files.
 - tsconfigs extend `@deviltea/tsconfig/base` and use composite project references; each package typechecks `src` and `tests` with separate tsconfig projects.
@@ -66,7 +69,7 @@ pnpm package:smoke
 - Package tests live in `packages/<pkg>/tests/*.test.ts`; script integration tests use temporary directories and must cover destructive or metadata-changing behavior.
 - Coverage is opt-in through `pnpm test:coverage`, so ordinary tests and watch mode do not pay the instrumentation cost.
 - `pnpm package:smoke` loads built packages through Node ESM and CJS where supported, then typechecks consumers using TypeScript `Bundler` and `NodeNext` resolution.
-- Scaffold tests must cover both ESM-only and dual-format manifests and build configuration.
+- Scaffold tests must cover Node.js, browser, and platform-neutral runtime profiles plus ESM-only and dual-format manifests and build configuration.
 - CI runs build and tests on Node 22 and 24 across Ubuntu, Windows, and macOS, plus the stricter package and documentation checks on Ubuntu.
 
 ## Release
@@ -82,6 +85,6 @@ pnpm package:smoke
 ## Gotchas
 
 - `shellEmulator: true` in `pnpm-workspace.yaml` means package.json scripts run through pnpm's shell emulator: glob arguments must stay quoted (for example `--filter='./packages/*'`).
-- Supply-chain hardening in `pnpm-workspace.yaml`: `minimumReleaseAge: 4320`, `trustPolicy: no-downgrade`, `blockExoticSubdeps`, and `strictDepBuilds`.
-- Use `pnpm init:template` once in a generated repository. It preserves the `@deviltea/*` toolchain dependencies while replacing project metadata, package format, license, and placeholders.
+- Supply-chain hardening in `pnpm-workspace.yaml`: `minimumReleaseAge: 4320`, `trustPolicy: no-downgrade`, `blockExoticSubdeps`, and `strictDepBuilds`. Any `trustPolicyExclude` entry must be exact-version, documented, and justified by a reviewed upstream dependency.
+- Use `pnpm init:template` once in a generated repository. It preserves the `@deviltea/*` toolchain dependencies while replacing project metadata, package runtime, package format, license, and placeholders.
 - Root `package.json` is private; only `packages/*` are published.
