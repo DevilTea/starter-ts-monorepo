@@ -37,7 +37,8 @@ describe('isPackageVersionPublished', () => {
 			code: 0,
 			stdout: '"1.2.3"\n',
 			stderr: '',
-		})).toBe(true)
+		}))
+			.toBe(true)
 	})
 
 	it('recognizes npm E404 as an unpublished version', () => {
@@ -45,7 +46,8 @@ describe('isPackageVersionPublished', () => {
 			code: 1,
 			stdout: '',
 			stderr: 'npm error code E404\nnpm error 404 Not Found',
-		})).toBe(false)
+		}))
+			.toBe(false)
 	})
 
 	it('does not treat registry or network failures as an unpublished version', () => {
@@ -53,7 +55,8 @@ describe('isPackageVersionPublished', () => {
 			code: 1,
 			stdout: '',
 			stderr: 'npm error code EAI_AGAIN',
-		})).toThrow('Unable to determine')
+		}))
+			.toThrow('Unable to determine')
 	})
 })
 
