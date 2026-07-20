@@ -48,7 +48,7 @@ jobs:
           rm -f .github/apply-review-fixes.trigger
 
       - name: Format corrected files
-        run: pnpm exec eslint --fix package.json README.md AGENTS.md scripts/template.ts scripts/template.test.ts packages/pkg-placeholder/tsconfig.package.json
+        run: pnpm exec eslint --fix package.json README.md AGENTS.md scripts/init-template.ts scripts/newpkg.ts scripts/template.ts scripts/template.test.ts packages/pkg-placeholder/tsconfig.package.json
 
       - name: Lint
         run: pnpm lint
