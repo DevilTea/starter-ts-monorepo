@@ -2,21 +2,24 @@
 
 ## Project Overview
 
-Starter template for a TypeScript pnpm monorepo publishing packages to npm, with a VitePress docs site. Ships one placeholder package (`@deviltea/pkg-placeholder`); `pkg-placeholder`, `repo-placeholder`, `_description_`, and `deviltea` are global placeholders to replace when using the template (see README checklist). Requires Node >=24 and pnpm 10.34.4 (pinned via `packageManager`). All dependency versions are managed centrally through the `catalog:` in `pnpm-workspace.yaml` — packages declare deps as `"catalog:"`.
+Starter template for a TypeScript pnpm monorepo publishing packages to npm, with a VitePress docs site. Ships one placeholder package (`@deviltea/pkg-placeholder`). Initialize a generated repository with `pnpm init:template`; do not globally replace `deviltea`, because the toolchain intentionally depends on `@deviltea/eslint-config` and `@deviltea/tsconfig`. Requires Node >=24 and pnpm 10.34.4 (pinned via `packageManager`). All dependency versions are managed centrally through the `catalog:` in `pnpm-workspace.yaml` — packages declare dependencies as `"catalog:"`.
 
 **Repository structure:**
-```
-pnpm-workspace.yaml       # Workspace globs (docs, packages/*), version catalog, supply-chain security settings
+
+```text
+pnpm-workspace.yaml       # Workspace globs, version catalog, supply-chain security settings
 packages/
-└── pkg-placeholder/      # @deviltea/pkg-placeholder — placeholder package
-    ├── src/index.ts      # Source (tsdown builds ESM + CJS + dts to dist/)
+└── pkg-placeholder/      # @deviltea/pkg-placeholder — initial package template
+    ├── src/index.ts      # Source (tsdown builds ESM + CJS + declarations to dist/)
     ├── tests/            # Vitest tests
     └── tsdown.config.ts  # Build config
 docs/                     # VitePress docs site (deployed to GitHub Pages)
-scripts/newpkg.ts         # Interactive scaffold for a new package under packages/
-vitest.config.ts          # Root Vitest config: projects = packages/*, coverage + typecheck enabled
+scripts/init-template.ts  # Interactive repository initializer
+scripts/newpkg.ts         # Interactive scaffold for another package
+scripts/template.ts       # Tested file-system and metadata operations used by both CLIs
+vitest.config.ts          # Package projects plus script integration tests
 eslint.config.js          # @deviltea/eslint-config
-tsconfig.json             # Root of the TS project-references graph
+tsconfig.json             # Root of the TypeScript project-reference graph
 .github/workflows/        # ci, release, deploy-docs, security-audit
 ```
 
@@ -26,13 +29,16 @@ tsconfig.json             # Root of the TS project-references graph
 # Install dependencies
 pnpm install
 
-# Build all packages (recursive, ./packages/* only)
+# Initialize a newly generated repository from this template
+pnpm init:template
+
+# Build all packages
 pnpm build
 
-# Scaffold a new package under packages/ (interactive prompts)
+# Scaffold another package under packages/
 pnpm newpkg
 
-# Run all tests once (with coverage and type tests)
+# Run all tests once
 pnpm test
 
 # Run tests in watch mode
@@ -60,23 +66,25 @@ pnpm publint
 - tsconfigs extend `@deviltea/tsconfig/base` and use composite project references; each package typechecks `src` and `tests` with separate tsconfig projects.
 - Pre-commit hook (simple-git-hooks + lint-staged) runs `eslint --fix` on staged files.
 - New dependencies: add the version to the `catalog:` in `pnpm-workspace.yaml`, then reference it as `"catalog:"` in the package's `package.json`.
+- File-system automation must use Node APIs rather than POSIX-only shell commands. Never overwrite an existing package directory implicitly.
 
 ## Testing
 
-- Vitest, configured at the root (`vitest.config.ts`) with `projects: ['packages/*']`; each package has a minimal `vitest.config.ts` (`defineProject({})`).
-- Tests live in `packages/<pkg>/tests/*.test.ts`. Coverage (v8) and typechecking of tests are enabled by default; benchmarks match `**/*.bench.ts`.
-- Run everything: `pnpm test`. Single file: `pnpm vitest --run packages/pkg-placeholder/tests/some.test.ts`. Single test by name: add `-t 'test name'`.
-- CI runs the test suite on Node 22 and 24 across ubuntu/windows/macos.
+- Vitest is configured at the root with package projects under `packages/*` and a Node project for `scripts/**/*.test.ts`.
+- Package tests live in `packages/<pkg>/tests/*.test.ts`; script integration tests use temporary directories and must cover destructive or metadata-changing behavior.
+- Coverage (v8) and typechecking are enabled by default; benchmarks match `**/*.bench.ts`.
+- Run everything: `pnpm test`. Single package test: `pnpm vitest --run packages/pkg-placeholder/tests/some.test.ts`.
+- CI runs the test suite on Node 22 and 24 across Ubuntu, Windows, and macOS.
 
 ## Release
 
-- Releases run in CI: trigger the `Release` workflow (workflow_dispatch) with a `bump_type` (patch/minor/major). It validates (`pnpm build && pnpm publint && pnpm typecheck && pnpm test`), bumps all packages with `bumpp -r` (pushes the release commit + `v*` tag), publishes every `packages/*` package to npm via trusted publishing (OIDC — no token secret), then generates GitHub release notes with `changelogithub`.
+- Releases run in CI: trigger the `Release` workflow (`workflow_dispatch`) with a `bump_type` (patch/minor/major). It validates (`pnpm build && pnpm publint && pnpm typecheck && pnpm test`), bumps all packages with `bumpp -r`, publishes `packages/*` to npm via trusted publishing (OIDC), then generates GitHub release notes with `changelogithub`.
 - Docs deploy automatically to GitHub Pages on every push to `main` (`deploy-docs.yml`).
 - Weekly `security-audit.yml` runs `pnpm audit --audit-level=moderate` (Sundays 21:00 UTC).
 
 ## Gotchas
 
-- `shellEmulator: true` in `pnpm-workspace.yaml` means package.json scripts run through pnpm's shell emulator: glob arguments must stay quoted (e.g. `--filter='./packages/*'`), or the emulator expands them.
-- Supply-chain hardening in `pnpm-workspace.yaml`: `minimumReleaseAge: 4320` (new releases ignored for 3 days), `trustPolicy: no-downgrade`, `blockExoticSubdeps`, `strictDepBuilds`. Dependency build scripts are blocked unless listed in `onlyBuiltDependencies` (currently empty; `esbuild` and `simple-git-hooks` are in `ignoredBuiltDependencies`).
-- This is a template: placeholders (`pkg-placeholder`, `repo-placeholder`, `_description_`, `deviltea`) must be replaced globally before real use.
-- Root `package.json` name is `monorepo` and it is private; only `packages/*` are published.
+- `shellEmulator: true` in `pnpm-workspace.yaml` means package.json scripts run through pnpm's shell emulator: glob arguments must stay quoted (for example `--filter='./packages/*'`).
+- Supply-chain hardening in `pnpm-workspace.yaml`: `minimumReleaseAge: 4320`, `trustPolicy: no-downgrade`, `blockExoticSubdeps`, and `strictDepBuilds`.
+- Use `pnpm init:template` once in a generated repository. It preserves the `@deviltea/*` toolchain dependencies while replacing only project metadata and placeholders.
+- Root `package.json` is private; only `packages/*` are published.
