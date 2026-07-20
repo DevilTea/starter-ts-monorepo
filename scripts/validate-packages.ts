@@ -1,8 +1,8 @@
-import { cp, mkdtemp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises'
+import { spawn } from 'node:child_process'
+import { cp, mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import process from 'node:process'
-import { spawn } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 
 interface PackageManifest {
@@ -154,9 +154,10 @@ function hasCondition(value: unknown, condition: string): boolean {
 		return value.some(item => hasCondition(item, condition))
 	if (!value || typeof value !== 'object')
 		return false
-	return Object.entries(value).some(([key, nestedValue]) => (
-		key === condition || hasCondition(nestedValue, condition)
-	))
+	return Object.entries(value)
+		.some(([key, nestedValue]) => (
+			key === condition || hasCondition(nestedValue, condition)
+		))
 }
 
 async function writeJson(filePath: string, value: unknown): Promise<void> {
