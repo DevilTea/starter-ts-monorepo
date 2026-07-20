@@ -12,11 +12,13 @@ afterEach(async () => {
 })
 
 describe('createPackage', () => {
-	it('creates a cross-platform package scaffold and project reference', async () => {
+	it('creates a documented dual-format package and project reference', async () => {
 		const root = await createRoot()
 
 		await createPackage(root, {
+			description: 'A dual-format package',
 			directoryName: 'new-package',
+			format: 'dual',
 			packageName: '@example/new-package',
 		})
 
@@ -26,10 +28,40 @@ describe('createPackage', () => {
 			.toBe('./dist/index.d.mts')
 		expect(packageJson.sideEffects)
 			.toBe(false)
+		expect(packageJson.engines)
+			.toEqual({ node: '>=22' })
+		expect(await readFile(join(root, 'packages/new-package/README.md'), 'utf8'))
+			.toContain('A dual-format package')
+		expect(await readFile(join(root, 'packages/new-package/LICENSE'), 'utf8'))
+			.toContain('MIT License')
 		expect(await readFile(join(root, 'packages/new-package/tsdown.config.ts'), 'utf8'))
-			.toContain('defineConfig')
+			.toContain("format: ['esm', 'cjs']")
 		expect(tsConfig.references)
 			.toContainEqual({ path: './packages/new-package/tsconfig.json' })
+	})
+
+	it('creates an ESM-only package with matching exports', async () => {
+		const root = await createRoot()
+
+		await createPackage(root, {
+			description: 'An ESM package',
+			directoryName: 'esm-package',
+			format: 'esm',
+			packageName: '@example/esm-package',
+		})
+
+		const packageJson = await readJson(join(root, 'packages/esm-package/package.json'))
+		expect(packageJson.exports)
+			.toEqual({
+				'.': {
+					types: './dist/index.d.ts',
+					default: './dist/index.js',
+				},
+			})
+		expect(packageJson.main)
+			.toBe('./dist/index.js')
+		expect(await readFile(join(root, 'packages/esm-package/tsdown.config.ts'), 'utf8'))
+			.toContain("format: ['esm']")
 	})
 
 	it('refuses to overwrite an existing package directory', async () => {
@@ -37,20 +69,23 @@ describe('createPackage', () => {
 		await mkdir(join(root, 'packages/existing'), { recursive: true })
 
 		await expect(createPackage(root, {
+			description: 'Existing package',
 			directoryName: 'existing',
+			format: 'esm',
 			packageName: '@example/existing',
 		})).rejects.toThrow('already exists')
 	})
 })
 
 describe('initializeTemplate', () => {
-	it('renames the placeholder package and removes starter placeholders', async () => {
+	it('renames and productizes the placeholder package', async () => {
 		const root = await createRoot()
 		await mkdir(join(root, 'packages/pkg-placeholder'), { recursive: true })
 		await writeJson(join(root, 'packages/pkg-placeholder/package.json'), {
 			name: '@deviltea/pkg-placeholder',
 			version: '0.0.0',
 		})
+		await writeFile(join(root, 'packages/pkg-placeholder/tsdown.config.ts'), '')
 		await writeFile(join(root, 'README.md'), '# pkg-placeholder\n\n_description_\n')
 		await mkdir(join(root, 'docs/.vitepress'), { recursive: true })
 		await writeFile(join(root, 'docs/index.md'), 'repo-placeholder\n')
@@ -62,6 +97,7 @@ describe('initializeTemplate', () => {
 			repositoryName: 'example-repo',
 			description: 'Example project',
 			packageDirectory: 'core',
+			packageFormat: 'esm',
 			packageName: '@example/core',
 			authorName: 'Example Author',
 			authorEmail: 'author@example.com',
@@ -78,9 +114,20 @@ describe('initializeTemplate', () => {
 			})
 		expect(packageJson.name)
 			.toBe('@example/core')
+		expect(packageJson.exports)
+			.toEqual({
+				'.': {
+					types: './dist/index.d.ts',
+					default: './dist/index.js',
+				},
+			})
 		expect(tsConfig.references)
 			.toContainEqual({ path: './packages/core/tsconfig.json' })
 		expect(readme).not.toMatch(/pkg-placeholder|repo-placeholder|_description_/)
+		expect(await readFile(join(root, 'packages/core/README.md'), 'utf8'))
+			.toContain('Example project')
+		expect(await readFile(join(root, 'packages/core/LICENSE'), 'utf8'))
+			.toContain('Example Author')
 	})
 })
 
@@ -88,6 +135,7 @@ async function createRoot(): Promise<string> {
 	const root = await mkdtemp(join(tmpdir(), 'starter-ts-monorepo-'))
 	roots.push(root)
 	await mkdir(join(root, 'packages'), { recursive: true })
+	await writeFile(join(root, 'LICENSE'), 'MIT License\n\nCopyright (c) 2026 Example Author\n')
 	await writeJson(join(root, 'package.json'), {
 		name: 'monorepo',
 		version: '0.0.0',
