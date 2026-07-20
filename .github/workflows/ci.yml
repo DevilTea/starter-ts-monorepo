@@ -40,16 +40,22 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Lint
-        run: pnpm exec eslint . --format json --output-file lint-report.json
+      - name: Generate lint fixes for review
+        run: pnpm lint:fix
 
-      - name: Upload lint report
-        if: always() && hashFiles('lint-report.json') != ''
+      - name: Upload lint-fixed files
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: lint-report
-          path: lint-report.json
+          name: lint-fixed-files
+          path: |
+            scripts/template.test.ts
+            scripts/template.ts
+            scripts/validate-packages.ts
+            tsconfig.json
           retention-days: 1
+
+      - name: Verify lint does not modify files
+        run: git diff --exit-code
 
       - name: Typecheck workspaces
         run: pnpm typecheck
