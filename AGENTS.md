@@ -7,20 +7,21 @@ Starter template for a TypeScript pnpm monorepo publishing packages to npm, with
 **Repository structure:**
 
 ```text
-pnpm-workspace.yaml       # Workspace globs, version catalog, supply-chain security settings
+pnpm-workspace.yaml           # Workspace globs, version catalog, supply-chain security settings
 packages/
-└── pkg-placeholder/      # @deviltea/pkg-placeholder — initial package template
-    ├── src/index.ts      # Source (tsdown builds ESM + CJS + declarations to dist/)
-    ├── tests/            # Vitest tests
-    └── tsdown.config.ts  # Build config
-docs/                     # VitePress docs site (deployed to GitHub Pages)
-scripts/init-template.ts  # Interactive repository initializer
-scripts/newpkg.ts         # Interactive scaffold for another package
-scripts/template.ts       # Tested file-system and metadata operations used by both CLIs
-vitest.config.ts          # Package projects plus script integration tests
-eslint.config.js          # @deviltea/eslint-config
-tsconfig.json             # Root of the TypeScript project-reference graph
-.github/workflows/        # ci, release, deploy-docs, security-audit
+└── pkg-placeholder/          # @deviltea/pkg-placeholder — initial package template
+    ├── src/index.ts          # Source (tsdown builds ESM + CJS + declarations to dist/)
+    ├── tests/                # Vitest tests
+    └── tsdown.config.ts      # Build config
+docs/                         # VitePress docs site (deployed to GitHub Pages)
+scripts/init-template.ts      # Interactive repository initializer
+scripts/newpkg.ts             # Interactive scaffold for another package
+scripts/template.ts           # Tested file-system and metadata operations used by both CLIs
+scripts/validate-packages.ts  # Runtime and TypeScript consumer validation for built packages
+vitest.config.ts              # Package projects plus script integration tests
+eslint.config.js              # @deviltea/eslint-config
+tsconfig.json                 # Root of the TypeScript project-reference graph
+.github/workflows/            # ci, release, deploy-docs, security-audit
 ```
 
 ## Setup Commands
@@ -38,31 +39,36 @@ pnpm build
 # Scaffold another package under packages/
 pnpm newpkg
 
-# Run all tests once
+# Run all tests once / with coverage / in watch mode
 pnpm test
-
-# Run tests in watch mode
+pnpm test:coverage
 pnpm test:watch
 
-# Lint and auto-fix
+# Validate formatting and lint rules without modifying files
 pnpm lint
 
-# Type check all workspace packages
+# Apply lint fixes locally
+pnpm lint:fix
+
+# Type check workspaces and the root project-reference graph
 pnpm typecheck
+pnpm typecheck:build
 
 # Docs: dev server / build / preview
 pnpm docs:dev
 pnpm docs:build
 pnpm docs:preview
 
-# Validate publish artifacts of all packages
+# Validate packed metadata and built package consumers
 pnpm publint
+pnpm package:smoke
 ```
 
 ## Code Style
 
 - TypeScript, ESM-first (`"type": "module"`, `sideEffects: false`); tsdown emits both ESM and CJS with type declarations.
-- ESLint via `@deviltea/eslint-config` (flat config in `eslint.config.js`); tabs for indentation, single quotes, no semicolons — enforced by `pnpm lint`.
+- ESLint via `@deviltea/eslint-config` (flat config in `eslint.config.js`); tabs for indentation, single quotes, no semicolons.
+- `pnpm lint` is a read-only CI gate. Use `pnpm lint:fix` or the pre-commit hook to modify files.
 - tsconfigs extend `@deviltea/tsconfig/base` and use composite project references; each package typechecks `src` and `tests` with separate tsconfig projects.
 - Pre-commit hook (simple-git-hooks + lint-staged) runs `eslint --fix` on staged files.
 - New dependencies: add the version to the `catalog:` in `pnpm-workspace.yaml`, then reference it as `"catalog:"` in the package's `package.json`.
@@ -72,9 +78,9 @@ pnpm publint
 
 - Vitest is configured at the root with package projects under `packages/*` and a Node project for `scripts/**/*.test.ts`.
 - Package tests live in `packages/<pkg>/tests/*.test.ts`; script integration tests use temporary directories and must cover destructive or metadata-changing behavior.
-- Coverage (v8) and typechecking are enabled by default; benchmarks match `**/*.bench.ts`.
-- Run everything: `pnpm test`. Single package test: `pnpm vitest --run packages/pkg-placeholder/tests/some.test.ts`.
-- CI runs the test suite on Node 22 and 24 across Ubuntu, Windows, and macOS.
+- Coverage is opt-in through `pnpm test:coverage`, so ordinary tests and watch mode do not pay the instrumentation cost.
+- `pnpm package:smoke` loads built packages through Node ESM and CJS where supported, then typechecks consumers using TypeScript `Bundler` and `NodeNext` resolution.
+- CI runs build and tests on Node 22 and 24 across Ubuntu, Windows, and macOS, plus the stricter package and documentation checks on Ubuntu.
 
 ## Release
 
