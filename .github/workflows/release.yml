@@ -82,6 +82,12 @@ jobs:
             exit 1
           fi
 
+          git fetch --no-tags origin main:refs/remotes/origin/main
+          if ! git merge-base --is-ancestor HEAD refs/remotes/origin/main; then
+            echo "${RELEASE_TAG} is not part of the main branch history." >&2
+            exit 1
+          fi
+
           version="$(node -p "JSON.parse(require('node:fs').readFileSync('package.json', 'utf8')).version")"
           if [[ "v${version}" != "${RELEASE_TAG}" ]]; then
             echo "Root version ${version} does not match ${RELEASE_TAG}." >&2
@@ -100,8 +106,8 @@ jobs:
 
       - name: Verify trusted publishing prerequisites
         run: |
-          node -e "const [major, minor] = process.versions.node.split('.').map(Number); if (major < 22 || (major === 22 && minor < 14)) process.exit(1)"
-          node -e "const [major, minor] = process.argv[1].split('.').map(Number); if (major < 11 || (major === 11 && minor < 5)) process.exit(1)" "$(npm --version)"
+          node -e "const [major, minor, patch] = process.versions.node.split('.').map(Number); if ([major, minor, patch].join('.') !== process.versions.node || major < 22 || (major === 22 && minor < 14)) process.exit(1)"
+          node -e "const version = process.argv[1].split('.').map(Number); const minimum = [11, 5, 1]; for (let index = 0; index < minimum.length; index += 1) { if (version[index] > minimum[index]) process.exit(0); if (version[index] < minimum[index]) process.exit(1) }" "$(npm --version)"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
