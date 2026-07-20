@@ -1,11 +1,11 @@
+import type { PackageFormat, PackageRuntime } from './template.js'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import { cancel, intro, isCancel, outro, select, text } from '@clack/prompts'
 import {
 	createPackage,
 	getDefaultPackageName,
-	type PackageFormat,
-	type PackageRuntime,
+
 	validatePackageDirectoryName,
 	validatePackageName,
 } from './template.js'

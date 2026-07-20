@@ -247,6 +247,14 @@ export async function initializeTemplate(root: string, options: InitializeTempla
 		join(placeholderDirectory, 'tsdown.config.ts'),
 		createTsdownConfig(options.packageFormat, options.packageRuntime),
 	)
+	await writeFile(
+		join(placeholderDirectory, 'tsconfig.package.json'),
+		createPackageTsConfig(options.packageRuntime),
+	)
+	await writeFile(
+		join(placeholderDirectory, 'tsconfig.tests.json'),
+		createTestsTsConfig(options.packageRuntime),
+	)
 	await updateTemplateTextFiles(root, options, repositoryUrl, author)
 
 	if (targetDirectory !== placeholderDirectory)
@@ -307,32 +315,46 @@ describe('${options.packageName}', () => {
 	],
 	"files": []
 }`,
-		'tsconfig.package.json': `
-{
-	"extends": "@deviltea/tsconfig/base",
-	"compilerOptions": {
-		"composite": true
-	},
-	"include": [
-		"./src/**/*.ts"
-	]
-}`,
-		'tsconfig.tests.json': `
-{
-	"extends": "@deviltea/tsconfig/node",
-	"compilerOptions": {
-		"composite": true
-	},
-	"include": [
-		"./src/**/*.ts",
-		"./tests/**/*.ts"
-	]
-}`,
+		'tsconfig.package.json': createPackageTsConfig(options.runtime),
+		'tsconfig.tests.json': createTestsTsConfig(options.runtime),
 		'vitest.config.ts': `
 import { defineProject } from 'vitest/config'
 
 export default defineProject({})`,
 	}
+}
+
+function createPackageTsConfig(runtime: PackageRuntime): string {
+	const extendsConfig = runtime === 'browser'
+		? '@deviltea/tsconfig/dom'
+		: runtime === 'node'
+			? '@deviltea/tsconfig/node'
+			: '@deviltea/tsconfig/base'
+	const compilerOptions: Record<string, unknown> = {
+		composite: true,
+	}
+	if (runtime === 'neutral') {
+		compilerOptions.lib = ['ESNext']
+		compilerOptions.types = []
+	}
+	return `${JSON.stringify({
+		extends: extendsConfig,
+		compilerOptions,
+		include: ['./src/**/*.ts'],
+	}, null, '\t')}\n`
+}
+
+function createTestsTsConfig(runtime: PackageRuntime): string {
+	const compilerOptions: Record<string, unknown> = {
+		composite: true,
+	}
+	if (runtime === 'browser')
+		compilerOptions.lib = ['ESNext', 'DOM', 'DOM.Iterable']
+	return `${JSON.stringify({
+		extends: '@deviltea/tsconfig/node',
+		compilerOptions,
+		include: ['./src/**/*.ts', './tests/**/*.ts'],
+	}, null, '\t')}\n`
 }
 
 function applyPackageRuntime(packageJson: PackageJson, runtime: PackageRuntime): void {
@@ -514,7 +536,7 @@ async function updateTemplateTextFiles(
 			content = content.replace('https://github.com/vuejs/vitepress', repositoryUrl)
 		if (relativePath === 'AGENTS.md') {
 			content = content
-				.replace(/Starter template for a TypeScript pnpm monorepo[^\n]+\n/, `${options.repositoryName} is a TypeScript pnpm monorepo publishing packages to npm, with a VitePress documentation site. Requires Node >=22.14.0 and pnpm 10.34.4. All dependency versions are managed centrally through the catalog in pnpm-workspace.yaml.\n`)
+				.replace(/Starter template for a TypeScript pnpm monorepo[^\n]+\n/, `${options.repositoryName} is a TypeScript pnpm monorepo publishing packages to npm, with a VitePress documentation site. Requires Node >=24 and pnpm 10.34.4. All dependency versions are managed centrally through the catalog in pnpm-workspace.yaml.\n`)
 				.replace(/- This is a template:[^\n]+\n/, '')
 		}
 
@@ -535,7 +557,7 @@ ${options.description.trim()}
 
 ## Requirements
 
-- Node.js 22.14.0 or newer for repository tooling
+- Node.js 24 or newer for repository tooling
 - pnpm 10.34.4 through Corepack
 
 ## Development

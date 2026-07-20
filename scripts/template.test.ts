@@ -26,6 +26,7 @@ describe('createPackage', () => {
 		const packageJson = await readJson(join(root, 'packages/new-package/package.json'))
 		const tsConfig = await readJson(join(root, 'tsconfig.json'))
 		const buildConfig = await readFile(join(root, 'packages/new-package/tsdown.config.ts'), 'utf8')
+		const packageTsConfig = await readJson(join(root, 'packages/new-package/tsconfig.package.json'))
 		expect(packageJson.types)
 			.toBe('./dist/index.d.mts')
 		expect(packageJson.sideEffects)
@@ -34,6 +35,8 @@ describe('createPackage', () => {
 			.toEqual({ node: '>=22' })
 		expect(packageJson.keywords)
 			.toEqual(['typescript', 'node'])
+		expect(packageTsConfig.extends)
+			.toBe('@deviltea/tsconfig/node')
 		expect(await readFile(join(root, 'packages/new-package/README.md'), 'utf8'))
 			.toContain('Node.js 22 or newer.')
 		expect(await readFile(join(root, 'packages/new-package/LICENSE'), 'utf8'))
@@ -63,6 +66,8 @@ describe('createPackage', () => {
 
 		const packageJson = await readJson(join(root, 'packages/esm-package/package.json'))
 		const buildConfig = await readFile(join(root, 'packages/esm-package/tsdown.config.ts'), 'utf8')
+		const packageTsConfig = await readJson(join(root, 'packages/esm-package/tsconfig.package.json'))
+		const testsTsConfig = await readJson(join(root, 'packages/esm-package/tsconfig.tests.json'))
 		expect(packageJson.exports)
 			.toEqual({
 				'.': {
@@ -76,6 +81,13 @@ describe('createPackage', () => {
 			.toBeUndefined()
 		expect(packageJson.keywords)
 			.toEqual(['typescript', 'browser'])
+		expect(packageTsConfig.extends)
+			.toBe('@deviltea/tsconfig/dom')
+		expect(testsTsConfig.compilerOptions)
+			.toEqual({
+				composite: true,
+				lib: ['ESNext', 'DOM', 'DOM.Iterable'],
+			})
 		expect(buildConfig)
 			.toContain('format: [\'esm\']')
 		expect(buildConfig)
@@ -83,6 +95,31 @@ describe('createPackage', () => {
 		expect(buildConfig)
 			.toContain('target: \'es2022\'')
 		expect(buildConfig).not.toContain('fixedExtension')
+	})
+
+	it('creates a platform-neutral package without platform globals', async () => {
+		const root = await createRoot()
+
+		await createPackage(root, {
+			description: 'A neutral package',
+			directoryName: 'neutral-package',
+			format: 'esm',
+			packageName: '@example/neutral-package',
+			runtime: 'neutral',
+		})
+
+		const packageJson = await readJson(join(root, 'packages/neutral-package/package.json'))
+		const packageTsConfig = await readJson(join(root, 'packages/neutral-package/tsconfig.package.json'))
+		expect(packageJson.engines)
+			.toBeUndefined()
+		expect(packageTsConfig.extends)
+			.toBe('@deviltea/tsconfig/base')
+		expect(packageTsConfig.compilerOptions)
+			.toEqual({
+				composite: true,
+				lib: ['ESNext'],
+				types: [],
+			})
 	})
 
 	it('refuses to overwrite an existing package directory', async () => {
@@ -134,6 +171,7 @@ describe('initializeTemplate', () => {
 		const tsConfig = await readJson(join(root, 'tsconfig.json'))
 		const readme = await readFile(join(root, 'README.md'), 'utf8')
 		const buildConfig = await readFile(join(root, 'packages/core/tsdown.config.ts'), 'utf8')
+		const packageTsConfig = await readJson(join(root, 'packages/core/tsconfig.package.json'))
 		expect(rootPackage.repository)
 			.toEqual({
 				type: 'git',
@@ -154,6 +192,12 @@ describe('initializeTemplate', () => {
 			.toEqual(['typescript'])
 		expect(buildConfig)
 			.toContain('platform: \'neutral\'')
+		expect(packageTsConfig.compilerOptions)
+			.toEqual({
+				composite: true,
+				lib: ['ESNext'],
+				types: [],
+			})
 		expect(tsConfig.references)
 			.toContainEqual({ path: './packages/core/tsconfig.json' })
 		expect(readme).not.toMatch(/pkg-placeholder|repo-placeholder|_description_/)

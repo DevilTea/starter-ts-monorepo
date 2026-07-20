@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-Starter template for a TypeScript pnpm monorepo publishing packages to npm, with a VitePress docs site. Ships one runtime-neutral placeholder package (`@deviltea/pkg-placeholder`). Initialize a generated repository with `pnpm init:template`; do not globally replace `deviltea`, because the toolchain intentionally depends on `@deviltea/eslint-config` and `@deviltea/tsconfig`. Requires Node >=22.14.0 and pnpm 10.34.4 (pinned via `packageManager`). All dependency versions are managed centrally through the `catalog:` in `pnpm-workspace.yaml`; packages declare dependencies as `"catalog:"`.
+Starter template for a TypeScript pnpm monorepo publishing packages to npm, with a VitePress docs site. Ships one runtime-neutral placeholder package (`@deviltea/pkg-placeholder`). Initialize a generated repository with `pnpm init:template`; do not globally replace `deviltea`, because the toolchain intentionally depends on `@deviltea/eslint-config` and `@deviltea/tsconfig`. Requires Node >=24 and pnpm 10.34.4 (pinned via `packageManager`). All dependency versions are managed centrally through the `catalog:` in `pnpm-workspace.yaml`; packages declare dependencies as `"catalog:"`.
 
 **Repository structure:**
 
@@ -70,7 +70,7 @@ pnpm package:smoke
 - Coverage is opt-in through `pnpm test:coverage`, so ordinary tests and watch mode do not pay the instrumentation cost.
 - `pnpm package:smoke` loads built packages through Node ESM and CJS where supported, then typechecks consumers using TypeScript `Bundler` and `NodeNext` resolution.
 - Scaffold tests must cover Node.js, browser, and platform-neutral runtime profiles plus ESM-only and dual-format manifests and build configuration.
-- CI runs build and tests on Node 22 and 24 across Ubuntu, Windows, and macOS, plus the stricter package and documentation checks on Ubuntu.
+- CI runs build and tests on Node 24 across Ubuntu, Windows, and macOS, plus the stricter package and documentation checks on Ubuntu.
 
 ## Release
 

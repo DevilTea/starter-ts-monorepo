@@ -4,7 +4,7 @@ A TypeScript pnpm monorepo starter for publishing platform-neutral, browser, or 
 
 ## Requirements
 
-- Node.js 22.14.0 or newer for repository tooling
+- Node.js 24 or newer for repository tooling
 - pnpm 10.34.4 through Corepack
 
 ## Use this template
