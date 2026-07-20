@@ -28,12 +28,14 @@ interface TsConfig {
 }
 
 export type PackageFormat = 'dual' | 'esm'
+export type PackageRuntime = 'browser' | 'neutral' | 'node'
 
 export interface CreatePackageOptions {
 	description: string
 	directoryName: string
 	format: PackageFormat
 	packageName: string
+	runtime: PackageRuntime
 }
 
 export interface InitializeTemplateOptions {
@@ -43,6 +45,7 @@ export interface InitializeTemplateOptions {
 	packageDirectory: string
 	packageFormat: PackageFormat
 	packageName: string
+	packageRuntime: PackageRuntime
 	repositoryName: string
 	repositoryOwner: string
 }
@@ -215,15 +218,13 @@ export async function initializeTemplate(root: string, options: InitializeTempla
 		bugs: {
 			url: `${repositoryUrl}/issues`,
 		},
-		keywords: ['typescript'],
+		keywords: createKeywords(options.packageRuntime),
 		sideEffects: false,
-		engines: {
-			node: '>=22',
-		},
 		publishConfig: {
 			access: 'public',
 		},
 	})
+	applyPackageRuntime(packageJson, options.packageRuntime)
 	applyPackageFormat(packageJson, options.packageFormat)
 
 	rootTsConfig.references = (rootTsConfig.references ?? []).map(reference => (
@@ -240,11 +241,11 @@ export async function initializeTemplate(root: string, options: InitializeTempla
 	await writeFile(join(placeholderDirectory, 'LICENSE'), license)
 	await writeFile(
 		join(placeholderDirectory, 'README.md'),
-		createPackageReadme(options.packageName, options.description),
+		createPackageReadme(options.packageName, options.description, options.packageRuntime),
 	)
 	await writeFile(
 		join(placeholderDirectory, 'tsdown.config.ts'),
-		createTsdownConfig(options.packageFormat),
+		createTsdownConfig(options.packageFormat, options.packageRuntime),
 	)
 	await updateTemplateTextFiles(root, options, repositoryUrl, author)
 
@@ -267,11 +268,8 @@ function createPackageFiles(
 		homepage: rootPackage.homepage,
 		repository: normalizeRepository(rootPackage.repository, options.directoryName),
 		bugs: normalizeBugs(rootPackage.bugs),
-		keywords: ['typescript'],
+		keywords: createKeywords(options.runtime),
 		sideEffects: false,
-		engines: {
-			node: '>=22',
-		},
 		publishConfig: {
 			access: rootPackage.publishConfig?.access ?? 'public',
 		},
@@ -284,13 +282,14 @@ function createPackageFiles(
 			'typecheck:test': 'tsc --project ./tsconfig.tests.json --noEmit',
 		},
 	}
+	applyPackageRuntime(packageJson, options.runtime)
 	applyPackageFormat(packageJson, options.format)
 
 	return {
 		'LICENSE': license,
-		'README.md': createPackageReadme(options.packageName, options.description),
+		'README.md': createPackageReadme(options.packageName, options.description, options.runtime),
 		'package.json': JSON.stringify(packageJson, null, '\t'),
-		'tsdown.config.ts': createTsdownConfig(options.format),
+		'tsdown.config.ts': createTsdownConfig(options.format, options.runtime),
 		'src/index.ts': 'export {}',
 		'tests/some.test.ts': `
 import { describe, expect, it } from 'vitest'
@@ -336,6 +335,16 @@ export default defineProject({})`,
 	}
 }
 
+function applyPackageRuntime(packageJson: PackageJson, runtime: PackageRuntime): void {
+	delete packageJson.engines
+
+	if (runtime === 'node') {
+		packageJson.engines = {
+			node: '>=22',
+		}
+	}
+}
+
 function applyPackageFormat(packageJson: PackageJson, format: PackageFormat): void {
 	delete packageJson.exports
 	delete packageJson.main
@@ -376,13 +385,17 @@ function applyPackageFormat(packageJson: PackageJson, format: PackageFormat): vo
 	})
 }
 
-function createTsdownConfig(format: PackageFormat): string {
+function createTsdownConfig(format: PackageFormat, runtime: PackageRuntime): string {
 	const formats = format === 'esm' ? '[\'esm\']' : '[\'esm\', \'cjs\']'
+	const target = runtime === 'node' ? 'node22' : 'es2022'
+	const fixedExtension = format === 'dual' ? '\n\tfixedExtension: true,' : ''
 	return `import { defineConfig } from 'tsdown'
 
 export default defineConfig({
 	entry: ['src/index.ts'],
 	format: ${formats},
+	platform: '${runtime}',
+	target: '${target}',${fixedExtension}
 	dts: {
 		tsconfig: 'tsconfig.package.json',
 		compilerOptions: {
@@ -394,10 +407,26 @@ export default defineConfig({
 `
 }
 
-function createPackageReadme(packageName: string, description: string): string {
+function createKeywords(runtime: PackageRuntime): string[] {
+	if (runtime === 'browser')
+		return ['typescript', 'browser']
+	if (runtime === 'node')
+		return ['typescript', 'node']
+	return ['typescript']
+}
+
+function createPackageReadme(
+	packageName: string,
+	description: string,
+	runtime: PackageRuntime,
+): string {
 	return `# ${packageName}
 
 ${description.trim()}
+
+## Runtime
+
+${getRuntimeDescription(runtime)}
 
 ## Install
 
@@ -417,11 +446,19 @@ import {} from '${packageName}'
 `
 }
 
+function getRuntimeDescription(runtime: PackageRuntime): string {
+	if (runtime === 'browser')
+		return 'Browser-targeted package output.'
+	if (runtime === 'node')
+		return 'Node.js 22 or newer.'
+	return 'Platform-neutral package output for shared libraries.'
+}
+
 function createMitLicense(authorName: string): string {
+	const currentYear = new Date().getUTCFullYear()
 	return `MIT License
 
-Copyright (c) ${new Date()
-	.getUTCFullYear()} ${authorName}
+Copyright (c) ${currentYear} ${authorName}
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -485,17 +522,18 @@ async function updateTemplateTextFiles(
 }
 
 function createInitializedReadme(options: InitializeTemplateOptions, repositoryUrl: string): string {
+	const currentYear = new Date().getUTCFullYear()
 	return `# ${options.repositoryName}
 
 ${options.description.trim()}
 
 ## Packages
 
-- [\`${options.packageName}\`](./packages/${options.packageDirectory})
+- [\`${options.packageName}\`](./packages/${options.packageDirectory}) — ${getRuntimeDescription(options.packageRuntime)}
 
 ## Requirements
 
-- Node.js 22.14.0 or newer
+- Node.js 22.14.0 or newer for repository tooling
 - pnpm 10.34.4 through Corepack
 
 ## Development
@@ -521,8 +559,7 @@ Configure GitHub Pages, a protected \`release\` environment, and npm trusted pub
 
 ## License
 
-[MIT](./LICENSE) License © ${new Date()
-	.getUTCFullYear()} [${options.authorName.trim()}](https://github.com/${options.repositoryOwner})
+[MIT](./LICENSE) License © ${currentYear} [${options.authorName.trim()}](https://github.com/${options.repositoryOwner})
 
 Repository: ${repositoryUrl}
 `
