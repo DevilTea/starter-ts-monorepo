@@ -1,27 +1,51 @@
-# pkg-placeholder
+# starter-ts-monorepo
 
-[![npm version][npm-version-src]][npm-version-href]
-[![npm downloads][npm-downloads-src]][npm-downloads-href]
-[![bundle][bundle-src]][bundle-href]
-[![License][license-src]][license-href]
+A TypeScript pnpm monorepo starter for publishing npm packages with ESM/CJS output, Vitest, VitePress, and GitHub Actions.
 
-_description_
+## Use this template
 
-**Checklist for using this template:**
-- [ ] Replace `pkg-placeholder`, `repo-placeholder`, `_description_` and `deviltea` globally to use this template.
-- [ ] Set `NPM_TOKEN` secret in GitHub repository settings for publishing to npm.
+1. Create a repository from this GitHub template.
+2. Install the pinned toolchain dependencies:
+
+   ```bash
+   corepack enable
+   pnpm install
+   ```
+
+3. Run the interactive initializer:
+
+   ```bash
+   pnpm init:template
+   ```
+
+   It updates repository and package metadata, renames `packages/pkg-placeholder`, rewrites TypeScript project references, and replaces the starter documentation without modifying `@deviltea/eslint-config` or `@deviltea/tsconfig`.
+
+4. Refresh the lockfile after the workspace path has been renamed:
+
+   ```bash
+   pnpm install --no-frozen-lockfile
+   ```
+
+5. Validate the initialized repository:
+
+   ```bash
+   pnpm lint
+   pnpm typecheck
+   pnpm test
+   pnpm build
+   pnpm publint
+   ```
+
+6. Configure GitHub Pages for the documentation workflow and configure npm trusted publishing for each public package. The release workflow uses OIDC and does not require an `NPM_TOKEN` repository secret.
+
+## Add another package
+
+```bash
+pnpm newpkg
+```
+
+The scaffold refuses to overwrite an existing directory and adds the package to the root TypeScript project-reference graph.
 
 ## License
 
 [MIT](./LICENSE) License © 2023-PRESENT [DevilTea](https://github.com/DevilTea)
-
-<!-- Badges -->
-
-[npm-version-src]: https://img.shields.io/npm/v/pkg-placeholder?style=flat&colorA=080f12&colorB=1fa669
-[npm-version-href]: https://npmjs.com/package/pkg-placeholder
-[npm-downloads-src]: https://img.shields.io/npm/dm/pkg-placeholder?style=flat&colorA=080f12&colorB=1fa669
-[npm-downloads-href]: https://npmjs.com/package/pkg-placeholder
-[bundle-src]: https://img.shields.io/bundlephobia/minzip/pkg-placeholder?style=flat&colorA=080f12&colorB=1fa669&label=minzip
-[bundle-href]: https://bundlephobia.com/result?p=pkg-placeholder
-[license-src]: https://img.shields.io/github/license/DevilTea/repo-placeholder.svg?style=flat&colorA=080f12&colorB=1fa669
-[license-href]: https://github.com/DevilTea/repo-placeholder/blob/main/LICENSE

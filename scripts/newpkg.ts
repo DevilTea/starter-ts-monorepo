@@ -1,182 +1,41 @@
-import { writeFile } from 'node:fs/promises'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import { cancel, intro, isCancel, outro, text } from '@clack/prompts'
-import { join } from 'pathe'
-import { $ } from 'zx'
+import { createPackage, getDefaultPackageName, validatePackageDirectoryName, validatePackageName } from './template.js'
+
+const root = fileURLToPath(new URL('..', import.meta.url))
 
 intro('Create a new package')
 
-const pkgDirname = await text({
-	message: 'Package directory name (/packages/<pkgDirname>)',
-	validate: (value) => {
-		if (!value)
-			return 'Required.'
-		if (!/^[a-z0-9-]+$/.test(value))
-			return 'Only lowercase letters, numbers, and hyphens are allowed.'
-		return void 0
-	},
+const packageDirectory = await text({
+	message: 'Package directory name (/packages/<name>)',
+	validate: validatePackageDirectoryName,
 })
 
-if (isCancel(pkgDirname)) {
+if (isCancel(packageDirectory)) {
 	cancel('Operation cancelled.')
 	process.exit(0)
 }
 
-const pkgName = await text({
-	message: 'Package name (@deviltea/<pkgName>)',
-	initialValue: pkgDirname,
-	validate: (value) => {
-		if (!value)
-			return 'Required.'
-		if (!/^[a-z0-9-]+$/.test(value))
-			return 'Only lowercase letters, numbers, and hyphens are allowed.'
-		return void 0
-	},
+const packageName = await text({
+	message: 'npm package name',
+	initialValue: await getDefaultPackageName(root, packageDirectory),
+	validate: validatePackageName,
 })
 
-if (isCancel(pkgName)) {
+if (isCancel(packageName)) {
 	cancel('Operation cancelled.')
 	process.exit(0)
 }
 
-const root = fileURLToPath(new URL('..', import.meta.url))
-const packageDir = join(root, 'packages', pkgDirname)
-
-await $`(rm -rf ${packageDir} || true) \
-		&& mkdir -p ${packageDir} \
-		&& mkdir -p ${join(packageDir, 'src')} \
-		&& mkdir -p ${join(packageDir, 'tests')} \
-`
-
-const pkgJson = JSON.parse((await $`cat ${join(root, 'package.json')}`).stdout)
-
-const templates = {
-	'package.json': `
-{
-	"name": "@deviltea/${pkgName}",
-	"type": "module",
-	"publishConfig": {
-		"access": "public"
-	},
-	"version": "${pkgJson.version}",
-	"author": "DevilTea <ch19980814@gmail.com>",
-	"license": "MIT",
-	"repository": {
-		"type": "git",
-		"url": "git+https://github.com/DevilTea/repo-placeholder.git",
-		"directory": "packages/${pkgDirname}"
-	},
-	"bugs": {
-		"url": "https://github.com/DevilTea/repo-placeholder/issues"
-	},
-	"keywords": [],
-	"exports": {
-		".": {
-			"import": {
-				"types": "./dist/index.d.mts",
-				"default": "./dist/index.mjs"
-			},
-			"require": {
-				"types": "./dist/index.d.cts",
-				"default": "./dist/index.cjs"
-			}
-		}
-	},
-	"main": "dist/index.cjs",
-	"module": "dist/index.mjs",
-	"types": "dist/index.d.ts",
-	"files": [
-		"dist"
-	],
-	"scripts": {
-		"build": "tsdown",
-		"build:pack": "pnpm build && pnpm pack",
-		"typecheck": "pnpm typecheck:package && pnpm typecheck:test",
-		"typecheck:package": "tsc --project ./tsconfig.package.json --noEmit",
-		"typecheck:test": "tsc --project ./tsconfig.tests.json --noEmit"
-	}
-}
-	`.trim(),
-	'build.config.ts': `
-import { defineConfig } from 'tsdown'
-
-export default defineConfig({
-	entry: ['src/index.ts'],
-	format: ['esm', 'cjs'],
-	dts: {
-		tsconfig: 'tsconfig.package.json',
-		compilerOptions: {
-			composite: false,
-		},
-	},
-	clean: true,
-})
-	`.trim(),
-	'src/index.ts': `
-export {}
-	`.trim(),
-	'tests/some.test.ts': `
-import { describe, expect, it } from 'vitest'
-
-describe('hello', () => {
-	it('is ok', () => {
-		expect(true).toBe(true)
+try {
+	await createPackage(root, {
+		directoryName: packageDirectory,
+		packageName,
 	})
-})
-	`.trim(),
-	'tsconfig.json': `
-{
-	"references": [
-		{ "path": "./tsconfig.package.json" },
-		{ "path": "./tsconfig.tests.json" }
-	],
-	"files": []
+	outro(`Package "${packageName}" created in packages/${packageDirectory}.`)
 }
-	`.trim(),
-	'tsconfig.package.json': `
-{
-	"extends": "@deviltea/tsconfig/base",
-	"compilerOptions": {
-		"composite": true
-	},
-	"include": [
-		"./src/**/*.ts"
-	],
-	"exclude": [
-		"./src/**/*.test.ts",
-		"./src/**/*.bench.ts"
-	]
+catch (error) {
+	cancel(error instanceof Error ? error.message : String(error))
+	process.exitCode = 1
 }
-	`.trim(),
-	'tsconfig.tests.json': `
-{
-	"extends": "@deviltea/tsconfig/node",
-	"compilerOptions": {
-		"composite": true
-	},
-	"include": [
-		"./src/**/*.ts",
-		"./tests/**/*.ts"
-	]
-}
-	`.trim(),
-	'vitest.config.ts': `
-import { defineProject } from 'vitest/config'
-
-export default defineProject({})
-	`.trim(),
-}
-
-for (const [filename, content] of Object.entries(templates)) {
-	await writeFile(join(packageDir, filename), `${content}\n`)
-}
-
-const rootTsConfig = JSON.parse((await $`cat ${join(root, 'tsconfig.json')}`).stdout)
-const pkgTsConfigPath = `./packages/${pkgDirname}/tsconfig.json`
-if (rootTsConfig.extends.includes(pkgTsConfigPath) === false) {
-	rootTsConfig.extends.push(pkgTsConfigPath)
-	await writeFile(join(root, 'tsconfig.json'), `${JSON.stringify(rootTsConfig, null, '\t')}\n`)
-}
-
-outro(`Package "${pkgName}" created.`)
