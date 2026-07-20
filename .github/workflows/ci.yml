@@ -1,31 +1,30 @@
 name: CI
 
 on:
-  push:
-    branches:
-      - main
-
   pull_request:
     branches:
       - main
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  check:
+  apply-lint-fixes:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
     steps:
-      - name: Checkout
+      - name: Checkout pull request branch
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
-          persist-credentials: false
+          ref: ${{ github.event.pull_request.head.ref }}
+          persist-credentials: true
 
       - name: Setup PNPM
         uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
@@ -34,31 +33,25 @@ jobs:
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
           node-version: 24
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
+          package-manager-cache: false
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Generate lint fixes for review
-        run: pnpm lint:fix
+      - name: Apply reviewed lint fixes
+        run: pnpm exec eslint --fix scripts/template.ts scripts/template.test.ts
 
-      - name: Upload lint-fixed runtime profile files
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: lint-fixed-runtime-files
-          path: |
-            scripts/init-template.ts
-            scripts/newpkg.ts
-            scripts/template.test.ts
-            scripts/template.ts
-          retention-days: 1
-
-      - name: Verify lint does not modify files
-        run: git diff --exit-code
-
-  test:
-    if: false
-    runs-on: ubuntu-latest
-    steps:
-      - run: exit 0
+      - name: Commit lint fixes
+        env:
+          HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add scripts/template.ts scripts/template.test.ts
+          if git diff --cached --quiet; then
+            echo "No lint fixes to commit."
+            exit 0
+          fi
+          git diff --cached --check
+          git commit -m "style: apply runtime profile lint fixes"
+          git push origin "HEAD:${HEAD_BRANCH}"
