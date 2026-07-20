@@ -52,6 +52,7 @@ export function validatePackageDirectoryName(value: string): string | undefined 
 		return 'Required.'
 	if (!packageDirectoryPattern.test(value))
 		return 'Use lowercase letters, numbers, and single hyphens between words.'
+	return undefined
 }
 
 export function validatePackageName(value: string): string | undefined {
@@ -59,6 +60,7 @@ export function validatePackageName(value: string): string | undefined {
 		return 'Required.'
 	if (!packageNamePattern.test(value))
 		return 'Use a lowercase npm package name, optionally scoped (for example @scope/package).'
+	return undefined
 }
 
 export function validateRepositoryName(value: string): string | undefined {
@@ -66,6 +68,7 @@ export function validateRepositoryName(value: string): string | undefined {
 		return 'Required.'
 	if (!repositoryNamePattern.test(value))
 		return 'Use letters, numbers, dots, underscores, or hyphens.'
+	return undefined
 }
 
 export function validateRepositoryOwner(value: string): string | undefined {
@@ -73,6 +76,7 @@ export function validateRepositoryOwner(value: string): string | undefined {
 		return 'Required.'
 	if (!repositoryOwnerPattern.test(value))
 		return 'Enter a valid GitHub user or organization name.'
+	return undefined
 }
 
 export async function getDefaultPackageName(root: string, directoryName: string): Promise<string> {
