@@ -377,7 +377,7 @@ function applyPackageFormat(packageJson: PackageJson, format: PackageFormat): vo
 }
 
 function createTsdownConfig(format: PackageFormat): string {
-	const formats = format === 'esm' ? "['esm']" : "['esm', 'cjs']"
+	const formats = format === 'esm' ? '[\'esm\']' : '[\'esm\', \'cjs\']'
 	return `import { defineConfig } from 'tsdown'
 
 export default defineConfig({
@@ -420,7 +420,8 @@ import {} from '${packageName}'
 function createMitLicense(authorName: string): string {
 	return `MIT License
 
-Copyright (c) ${new Date().getUTCFullYear()} ${authorName}
+Copyright (c) ${new Date()
+	.getUTCFullYear()} ${authorName}
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -520,7 +521,8 @@ Configure GitHub Pages, a protected \`release\` environment, and npm trusted pub
 
 ## License
 
-[MIT](./LICENSE) License © ${new Date().getUTCFullYear()} [${options.authorName.trim()}](https://github.com/${options.repositoryOwner})
+[MIT](./LICENSE) License © ${new Date()
+	.getUTCFullYear()} [${options.authorName.trim()}](https://github.com/${options.repositoryOwner})
 
 Repository: ${repositoryUrl}
 `

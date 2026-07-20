@@ -35,7 +35,7 @@ describe('createPackage', () => {
 		expect(await readFile(join(root, 'packages/new-package/LICENSE'), 'utf8'))
 			.toContain('MIT License')
 		expect(await readFile(join(root, 'packages/new-package/tsdown.config.ts'), 'utf8'))
-			.toContain("format: ['esm', 'cjs']")
+			.toContain('format: [\'esm\', \'cjs\']')
 		expect(tsConfig.references)
 			.toContainEqual({ path: './packages/new-package/tsconfig.json' })
 	})
@@ -61,7 +61,7 @@ describe('createPackage', () => {
 		expect(packageJson.main)
 			.toBe('./dist/index.js')
 		expect(await readFile(join(root, 'packages/esm-package/tsdown.config.ts'), 'utf8'))
-			.toContain("format: ['esm']")
+			.toContain('format: [\'esm\']')
 	})
 
 	it('refuses to overwrite an existing package directory', async () => {

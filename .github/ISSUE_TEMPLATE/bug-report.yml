@@ -1,6 +1,6 @@
 name: Bug report
 description: Report a reproducible defect in a published package or the starter tooling
-title: "bug: "
+title: 'bug: '
 labels:
   - bug
 body:
@@ -13,14 +13,14 @@ body:
     attributes:
       label: Package or component
       description: Name the affected npm package, script, workflow, or documentation area.
-      placeholder: "@scope/package or pnpm init:template"
+      placeholder: '@scope/package or pnpm init:template'
     validations:
       required: true
   - type: input
     id: version
     attributes:
       label: Version or commit
-      placeholder: "1.2.3 or commit SHA"
+      placeholder: 1.2.3 or commit SHA
     validations:
       required: true
   - type: textarea
@@ -47,6 +47,6 @@ body:
     attributes:
       label: Environment
       description: Include Node.js, pnpm, operating system, and relevant TypeScript or bundler versions.
-      placeholder: "Node 24.x, pnpm 10.x, macOS"
+      placeholder: 'Node 24.x, pnpm 10.x, macOS'
     validations:
       required: true
