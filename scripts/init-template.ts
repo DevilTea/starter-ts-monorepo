@@ -3,6 +3,8 @@ import { fileURLToPath } from 'node:url'
 import { cancel, confirm, intro, isCancel, outro, select, text } from '@clack/prompts'
 import {
 	initializeTemplate,
+	type PackageFormat,
+	type PackageRuntime,
 	validatePackageDirectoryName,
 	validatePackageName,
 	validateRepositoryName,
@@ -52,7 +54,7 @@ const packageName = await text({
 if (isCancel(packageName))
 	exitCancelled()
 
-const packageRuntime = await select({
+const packageRuntime = await select<PackageRuntime>({
 	message: 'Initial package runtime target',
 	initialValue: 'neutral',
 	options: [
@@ -76,7 +78,7 @@ const packageRuntime = await select({
 if (isCancel(packageRuntime))
 	exitCancelled()
 
-const packageFormat = await select({
+const packageFormat = await select<PackageFormat>({
 	message: 'Initial package module format',
 	initialValue: 'esm',
 	options: [
