@@ -1,10 +1,10 @@
 # starter-ts-monorepo
 
-A TypeScript pnpm monorepo starter for publishing ESM-only or ESM/CommonJS npm packages with Vitest, VitePress, and hardened GitHub Actions.
+A TypeScript pnpm monorepo starter for publishing platform-neutral, browser, or Node.js npm packages with ESM-only or ESM/CommonJS output, Vitest, VitePress, and hardened GitHub Actions.
 
 ## Requirements
 
-- Node.js 22.14.0 or newer
+- Node.js 22.14.0 or newer for repository tooling
 - pnpm 10.34.4 through Corepack
 
 ## Use this template
@@ -23,7 +23,7 @@ A TypeScript pnpm monorepo starter for publishing ESM-only or ESM/CommonJS npm p
    pnpm init:template
    ```
 
-   It updates repository and package metadata, selects ESM-only or dual ESM/CommonJS output, renames `packages/pkg-placeholder`, creates package-local README and LICENSE files, rewrites TypeScript project references, and replaces starter documentation without modifying `@deviltea/eslint-config` or `@deviltea/tsconfig`.
+   It updates repository and package metadata, selects a platform-neutral, browser, or Node.js runtime target, selects ESM-only or dual ESM/CommonJS output, renames `packages/pkg-placeholder`, creates package-local README and LICENSE files, rewrites TypeScript project references, and replaces starter documentation without modifying `@deviltea/eslint-config` or `@deviltea/tsconfig`.
 
 4. Refresh the lockfile after the workspace path has been renamed:
 
@@ -44,6 +44,15 @@ A TypeScript pnpm monorepo starter for publishing ESM-only or ESM/CommonJS npm p
    pnpm docs:build
    ```
 
+## Package profiles
+
+The initializer and `pnpm newpkg` ask for two independent choices:
+
+- **Runtime:** platform-neutral for shared libraries, browser for browser-oriented packages, or Node.js 22+ for packages that use Node.js APIs.
+- **Module format:** ESM-only by default, or dual ESM/CommonJS when legacy CommonJS consumers are an explicit requirement.
+
+Only the Node.js runtime profile adds an `engines.node` requirement. Browser and platform-neutral packages remain usable outside Node.js when their source code and dependencies are compatible.
+
 ## Repository setup checklist
 
 - Enable GitHub Pages with **GitHub Actions** as the source.
@@ -62,7 +71,7 @@ The release workflow uses OIDC and does not require an `NPM_TOKEN` repository se
 pnpm newpkg
 ```
 
-The scaffold requests package metadata and output format, refuses to overwrite an existing directory, copies the repository license, creates a package-local README, and adds the package to the root TypeScript project-reference graph. ESM-only is the recommended default; choose dual output only when CommonJS consumers are required.
+The scaffold requests package metadata, runtime target, and module format; refuses to overwrite an existing directory; copies the repository license; creates a package-local README; and adds the package to the root TypeScript project-reference graph.
 
 ## Contributing and security
 
