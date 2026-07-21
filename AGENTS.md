@@ -53,12 +53,11 @@ pnpm package:smoke
 
 - TypeScript and ESM-first. New packages default to platform-neutral ESM-only output.
 - Runtime profiles are independent of module format: `neutral`, `browser`, or `node`; and `esm` or `dual`.
-- Runtime profiles must align tsdown and TypeScript 6 presets: neutral uses `neutral`; browser uses `browser`; bundled Node.js packages use `node-bundler`, target `node22`, and declare `engines.node >=22`; tests and repository tools use `tooling`.
+- TypeScript 6 runtime profiles must align tsdown and `@deviltea/tsconfig` v1: neutral uses `neutral`; browser uses `browser`; bundled Node.js packages use `node-bundler`, target `node22`, and declare `engines.node >=22`; tests, repository scripts, and tool configuration use `tooling`. Composite project references keep package source and tests separate.
 - Select dual ESM/CommonJS output only for an explicit CommonJS compatibility requirement. Dual builds must use fixed extensions so package exports remain deterministic.
 - Every publishable package must declare `sideEffects`, exports, description, repository metadata, a package-local README, and a package-local LICENSE. Node engines are required only for Node-targeted packages.
 - ESLint via `@deviltea/eslint-config` (flat config in `eslint.config.js`); tabs for indentation, single quotes, no semicolons.
 - `pnpm lint` is a read-only CI gate. Use `pnpm lint:fix` or the pre-commit hook to modify files.
-- TypeScript 6 projects use `@deviltea/tsconfig` v1 runtime presets: package source selects `neutral`, `browser`, or `node-bundler`; repository scripts, tests, and tool configuration use `tooling`. Composite project references keep package source and tests separate.
 - Pre-commit hook (simple-git-hooks + lint-staged) runs `eslint --fix` on staged files.
 - New dependencies: add the version to the `catalog:` in `pnpm-workspace.yaml`, then reference it as `"catalog:"` in the package's `package.json`.
 - File-system automation must use Node APIs rather than POSIX-only shell commands. Never overwrite an existing package directory implicitly.
