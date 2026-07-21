@@ -70,16 +70,29 @@ jobs:
       - name: Apply ESLint 9 fixes
         run: pnpm lint:fix
 
-      - name: Validate migration
-        run: |
-          pnpm lint
-          pnpm typecheck
-          pnpm typecheck:build
-          pnpm test:coverage
-          pnpm build
-          pnpm publint
-          pnpm package:smoke
-          pnpm docs:build
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck workspaces
+        run: pnpm typecheck
+
+      - name: Typecheck project references
+        run: pnpm typecheck:build
+
+      - name: Test with coverage
+        run: pnpm test:coverage
+
+      - name: Build packages
+        run: pnpm build
+
+      - name: Validate publish artifacts
+        run: pnpm publint
+
+      - name: Validate package consumers
+        run: pnpm package:smoke
+
+      - name: Build documentation
+        run: pnpm docs:build
 
       - name: Commit migration
         env:
