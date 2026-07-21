@@ -1,5 +1,5 @@
 {
-	"extends": "@deviltea/tsconfig/dom",
+	"extends": "@deviltea/tsconfig/browser",
 	"compilerOptions": {
 		"composite": true
 	},
@@ -13,6 +13,8 @@
 		"./.vitepress/config.ts"
 	],
 	"vueCompilerOptions": {
-		"vitePressExtensions": [".md"]
+		"vitePressExtensions": [
+			".md"
+		]
 	}
 }

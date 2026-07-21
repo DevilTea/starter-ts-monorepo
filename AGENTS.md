@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-Starter template for a TypeScript pnpm monorepo publishing packages to npm, with a VitePress docs site. Ships one runtime-neutral placeholder package (`@deviltea/pkg-placeholder`). Initialize a generated repository with `pnpm init:template`; do not globally replace `deviltea`, because the toolchain intentionally depends on `@deviltea/eslint-config` and `@deviltea/tsconfig`. Requires Node >=24 and pnpm 10.34.4 (pinned via `packageManager`). All dependency versions are managed centrally through the `catalog:` in `pnpm-workspace.yaml`; packages declare dependencies as `"catalog:"`.
+Starter template for a TypeScript pnpm monorepo publishing packages to npm, with a VitePress docs site. Ships one runtime-neutral placeholder package (`@deviltea/pkg-placeholder`). Initialize a generated repository with `pnpm init:template`; do not globally replace `deviltea`, because the toolchain intentionally depends on `@deviltea/eslint-config` and `@deviltea/tsconfig`. Requires Node >=24, TypeScript 6, and pnpm 10.34.4 (pinned via `packageManager`). All dependency versions are managed centrally through the `catalog:` in `pnpm-workspace.yaml`; packages declare dependencies as `"catalog:"`.
 
 **Repository structure:**
 
@@ -58,7 +58,7 @@ pnpm package:smoke
 - Every publishable package must declare `sideEffects`, exports, description, repository metadata, a package-local README, and a package-local LICENSE. Node engines are required only for Node-targeted packages.
 - ESLint via `@deviltea/eslint-config` (flat config in `eslint.config.js`); tabs for indentation, single quotes, no semicolons.
 - `pnpm lint` is a read-only CI gate. Use `pnpm lint:fix` or the pre-commit hook to modify files.
-- tsconfigs extend `@deviltea/tsconfig/base` and use composite project references; each package typechecks `src` and `tests` with separate tsconfig projects.
+- TypeScript 6 projects use `@deviltea/tsconfig` v1 runtime presets: package source selects `neutral`, `browser`, or `node-bundler`; repository scripts, tests, and tool configuration use `tooling`. Composite project references keep package source and tests separate.
 - Pre-commit hook (simple-git-hooks + lint-staged) runs `eslint --fix` on staged files.
 - New dependencies: add the version to the `catalog:` in `pnpm-workspace.yaml`, then reference it as `"catalog:"` in the package's `package.json`.
 - File-system automation must use Node APIs rather than POSIX-only shell commands. Never overwrite an existing package directory implicitly.

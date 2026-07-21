@@ -4,17 +4,14 @@ import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { createPackage, initializeTemplate } from './template.js'
 
-const roots: string[] = []
-
+const roots = []
 afterEach(async () => {
 	await Promise.all(roots.splice(0)
 		.map(root => rm(root, { force: true, recursive: true })))
 })
-
 describe('createPackage', () => {
 	it('creates a documented Node.js dual-format package and project reference', async () => {
 		const root = await createRoot()
-
 		await createPackage(root, {
 			description: 'A dual-format package',
 			directoryName: 'new-package',
@@ -22,7 +19,6 @@ describe('createPackage', () => {
 			packageName: '@example/new-package',
 			runtime: 'node',
 		})
-
 		const packageJson = await readJson(join(root, 'packages/new-package/package.json'))
 		const tsConfig = await readJson(join(root, 'tsconfig.json'))
 		const buildConfig = await readFile(join(root, 'packages/new-package/tsdown.config.ts'), 'utf8')
@@ -52,10 +48,8 @@ describe('createPackage', () => {
 		expect(tsConfig.references)
 			.toContainEqual({ path: './packages/new-package/tsconfig.json' })
 	})
-
 	it('creates a browser-targeted ESM-only package with matching exports', async () => {
 		const root = await createRoot()
-
 		await createPackage(root, {
 			description: 'An ESM package',
 			directoryName: 'esm-package',
@@ -63,7 +57,6 @@ describe('createPackage', () => {
 			packageName: '@example/esm-package',
 			runtime: 'browser',
 		})
-
 		const packageJson = await readJson(join(root, 'packages/esm-package/package.json'))
 		const buildConfig = await readFile(join(root, 'packages/esm-package/tsdown.config.ts'), 'utf8')
 		const packageTsConfig = await readJson(join(root, 'packages/esm-package/tsconfig.package.json'))
@@ -98,10 +91,8 @@ describe('createPackage', () => {
 			.toContain('target: \'es2022\'')
 		expect(buildConfig).not.toContain('fixedExtension')
 	})
-
 	it('creates a platform-neutral package without platform globals', async () => {
 		const root = await createRoot()
-
 		await createPackage(root, {
 			description: 'A neutral package',
 			directoryName: 'neutral-package',
@@ -109,7 +100,6 @@ describe('createPackage', () => {
 			packageName: '@example/neutral-package',
 			runtime: 'neutral',
 		})
-
 		const packageJson = await readJson(join(root, 'packages/neutral-package/package.json'))
 		const packageTsConfig = await readJson(join(root, 'packages/neutral-package/tsconfig.package.json'))
 		expect(packageJson.engines)
@@ -121,11 +111,9 @@ describe('createPackage', () => {
 				composite: true,
 			})
 	})
-
 	it('refuses to overwrite an existing package directory', async () => {
 		const root = await createRoot()
 		await mkdir(join(root, 'packages/existing'), { recursive: true })
-
 		await expect(createPackage(root, {
 			description: 'Existing package',
 			directoryName: 'existing',
@@ -135,7 +123,6 @@ describe('createPackage', () => {
 		})).rejects.toThrow('already exists')
 	})
 })
-
 describe('initializeTemplate', () => {
 	it('renames and productizes the placeholder as a neutral package', async () => {
 		const root = await createRoot()
@@ -153,7 +140,6 @@ describe('initializeTemplate', () => {
 		await writeFile(join(root, 'docs/index.md'), 'repo-placeholder\n')
 		await writeFile(join(root, 'docs/.vitepress/config.ts'), 'title: \'repo-placeholder\'\n')
 		await writeFile(join(root, 'AGENTS.md'), 'packages/pkg-placeholder\n')
-
 		await initializeTemplate(root, {
 			repositoryOwner: 'ExampleOrg',
 			repositoryName: 'example-repo',
@@ -165,7 +151,6 @@ describe('initializeTemplate', () => {
 			authorName: 'Example Author',
 			authorEmail: 'author@example.com',
 		})
-
 		const rootPackage = await readJson(join(root, 'package.json'))
 		const packageJson = await readJson(join(root, 'packages/core/package.json'))
 		const tsConfig = await readJson(join(root, 'tsconfig.json'))
@@ -209,8 +194,7 @@ describe('initializeTemplate', () => {
 			.toContain('Example Author')
 	})
 })
-
-async function createRoot(): Promise<string> {
+async function createRoot() {
 	const root = await mkdtemp(join(tmpdir(), 'starter-ts-monorepo-'))
 	roots.push(root)
 	await mkdir(join(root, 'packages'), { recursive: true })
@@ -242,11 +226,9 @@ async function createRoot(): Promise<string> {
 	})
 	return root
 }
-
-async function readJson(filePath: string): Promise<Record<string, unknown>> {
-	return JSON.parse(await readFile(filePath, 'utf8')) as Record<string, unknown>
+async function readJson(filePath) {
+	return JSON.parse(await readFile(filePath, 'utf8'))
 }
-
-async function writeJson(filePath: string, value: unknown): Promise<void> {
+async function writeJson(filePath, value) {
 	await writeFile(filePath, `${JSON.stringify(value, null, '\t')}\n`)
 }

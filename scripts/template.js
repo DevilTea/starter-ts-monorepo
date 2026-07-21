@@ -1,126 +1,66 @@
 import { access, mkdir, mkdtemp, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 
-interface PackageJson {
-	[key: string]: unknown
-	author?: unknown
-	bugs?: unknown
-	config?: {
-		packageScope?: string
-		[key: string]: unknown
-	}
-	description?: string
-	homepage?: string
-	license?: string
-	name?: string
-	publishConfig?: {
-		access?: string
-		[key: string]: unknown
-	}
-	repository?: unknown
-	version?: string
-}
-
-interface TsConfig {
-	files?: string[]
-	references?: Array<{ path: string }>
-	[key: string]: unknown
-}
-
-export type PackageFormat = 'dual' | 'esm'
-export type PackageRuntime = 'browser' | 'neutral' | 'node'
-
-export interface CreatePackageOptions {
-	description: string
-	directoryName: string
-	format: PackageFormat
-	packageName: string
-	runtime: PackageRuntime
-}
-
-export interface InitializeTemplateOptions {
-	authorEmail?: string
-	authorName: string
-	description: string
-	packageDirectory: string
-	packageFormat: PackageFormat
-	packageName: string
-	packageRuntime: PackageRuntime
-	repositoryName: string
-	repositoryOwner: string
-}
-
 const packageDirectoryPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 const packageNamePattern = /^(?:@[a-z0-9][a-z0-9._-]*\/)?[a-z0-9][a-z0-9._-]*$/
 const repositoryNamePattern = /^[\w.-]+$/
 const repositoryOwnerPattern = /^[A-Z0-9](?:[A-Z0-9-]{0,37}[A-Z0-9])?$/i
-
-export function validatePackageDirectoryName(value: string): string | undefined {
+export function validatePackageDirectoryName(value) {
 	if (!value)
 		return 'Required.'
 	if (!packageDirectoryPattern.test(value))
 		return 'Use lowercase letters, numbers, and single hyphens between words.'
 	return undefined
 }
-
-export function validatePackageName(value: string): string | undefined {
+export function validatePackageName(value) {
 	if (!value)
 		return 'Required.'
 	if (!packageNamePattern.test(value))
 		return 'Use a lowercase npm package name, optionally scoped (for example @scope/package).'
 	return undefined
 }
-
-export function validateRepositoryName(value: string): string | undefined {
+export function validateRepositoryName(value) {
 	if (!value)
 		return 'Required.'
 	if (!repositoryNamePattern.test(value))
 		return 'Use letters, numbers, dots, underscores, or hyphens.'
 	return undefined
 }
-
-export function validateRepositoryOwner(value: string): string | undefined {
+export function validateRepositoryOwner(value) {
 	if (!value)
 		return 'Required.'
 	if (!repositoryOwnerPattern.test(value))
 		return 'Enter a valid GitHub user or organization name.'
 	return undefined
 }
-
-export async function getDefaultPackageName(root: string, directoryName: string): Promise<string> {
-	const rootPackage = await readJson<PackageJson>(join(root, 'package.json'))
+export async function getDefaultPackageName(root, directoryName) {
+	const rootPackage = await readJson(join(root, 'package.json'))
 	const packageScope = rootPackage.config?.packageScope?.trim()
 	return packageScope ? `${packageScope}/${directoryName}` : directoryName
 }
-
-export async function createPackage(root: string, options: CreatePackageOptions): Promise<void> {
+export async function createPackage(root, options) {
 	const directoryError = validatePackageDirectoryName(options.directoryName)
 	if (directoryError)
 		throw new Error(directoryError)
-
 	const packageNameError = validatePackageName(options.packageName)
 	if (packageNameError)
 		throw new Error(packageNameError)
 	if (!options.description.trim())
 		throw new Error('Package description is required.')
-
 	const packagesRoot = join(root, 'packages')
 	const packageDirectory = join(packagesRoot, options.directoryName)
 	if (await pathExists(packageDirectory))
 		throw new Error(`Package directory already exists: packages/${options.directoryName}`)
-
-	const rootPackage = await readJson<PackageJson>(join(root, 'package.json'))
+	const rootPackage = await readJson(join(root, 'package.json'))
 	const rootLicense = await readFile(join(root, 'LICENSE'), 'utf8')
 	const rootTsConfigPath = join(root, 'tsconfig.json')
-	const rootTsConfig = await readJson<TsConfig>(rootTsConfigPath)
+	const rootTsConfig = await readJson(rootTsConfigPath)
 	const referencePath = `./packages/${options.directoryName}/tsconfig.json`
 	if (rootTsConfig.references?.some(reference => reference.path === referencePath))
 		throw new Error(`TypeScript project reference already exists: ${referencePath}`)
-
 	await mkdir(packagesRoot, { recursive: true })
 	const temporaryDirectory = await mkdtemp(join(packagesRoot, `.new-${options.directoryName}-`))
 	let moved = false
-
 	try {
 		const files = createPackageFiles(rootPackage, options, rootLicense)
 		for (const [relativePath, content] of Object.entries(files)) {
@@ -128,10 +68,8 @@ export async function createPackage(root: string, options: CreatePackageOptions)
 			await mkdir(dirname(filePath), { recursive: true })
 			await writeFile(filePath, `${content.trim()}\n`)
 		}
-
 		await rename(temporaryDirectory, packageDirectory)
 		moved = true
-
 		rootTsConfig.files ??= []
 		rootTsConfig.references = [
 			...(rootTsConfig.references ?? []),
@@ -144,43 +82,35 @@ export async function createPackage(root: string, options: CreatePackageOptions)
 		throw error
 	}
 }
-
-export async function initializeTemplate(root: string, options: InitializeTemplateOptions): Promise<void> {
+export async function initializeTemplate(root, options) {
 	const ownerError = validateRepositoryOwner(options.repositoryOwner)
 	if (ownerError)
 		throw new Error(ownerError)
-
 	const repositoryError = validateRepositoryName(options.repositoryName)
 	if (repositoryError)
 		throw new Error(repositoryError)
-
 	const directoryError = validatePackageDirectoryName(options.packageDirectory)
 	if (directoryError)
 		throw new Error(directoryError)
-
 	const packageNameError = validatePackageName(options.packageName)
 	if (packageNameError)
 		throw new Error(packageNameError)
-
 	if (!options.authorName.trim())
 		throw new Error('Author name is required.')
 	if (!options.description.trim())
 		throw new Error('Description is required.')
-
 	const placeholderDirectory = join(root, 'packages', 'pkg-placeholder')
 	if (!(await pathExists(placeholderDirectory)))
 		throw new Error('packages/pkg-placeholder was not found. The template may already be initialized.')
-
 	const targetDirectory = join(root, 'packages', options.packageDirectory)
 	if (targetDirectory !== placeholderDirectory && await pathExists(targetDirectory))
 		throw new Error(`Target package directory already exists: packages/${options.packageDirectory}`)
-
 	const rootPackagePath = join(root, 'package.json')
 	const packageJsonPath = join(placeholderDirectory, 'package.json')
 	const rootTsConfigPath = join(root, 'tsconfig.json')
-	const rootPackage = await readJson<PackageJson>(rootPackagePath)
-	const packageJson = await readJson<PackageJson>(packageJsonPath)
-	const rootTsConfig = await readJson<TsConfig>(rootTsConfigPath)
+	const rootPackage = await readJson(rootPackagePath)
+	const packageJson = await readJson(packageJsonPath)
+	const rootTsConfig = await readJson(rootTsConfigPath)
 	const repositoryUrl = `https://github.com/${options.repositoryOwner}/${options.repositoryName}`
 	const author = options.authorEmail?.trim()
 		? `${options.authorName.trim()} <${options.authorEmail.trim()}>`
@@ -188,7 +118,6 @@ export async function initializeTemplate(root: string, options: InitializeTempla
 	const packageScope = options.packageName.startsWith('@')
 		? options.packageName.slice(0, options.packageName.indexOf('/'))
 		: ''
-
 	Object.assign(rootPackage, {
 		name: options.repositoryName,
 		description: options.description.trim(),
@@ -204,7 +133,6 @@ export async function initializeTemplate(root: string, options: InitializeTempla
 			packageScope,
 		},
 	})
-
 	Object.assign(packageJson, {
 		name: options.packageName,
 		description: options.description.trim(),
@@ -226,47 +154,25 @@ export async function initializeTemplate(root: string, options: InitializeTempla
 	})
 	applyPackageRuntime(packageJson, options.packageRuntime)
 	applyPackageFormat(packageJson, options.packageFormat)
-
-	rootTsConfig.references = (rootTsConfig.references ?? []).map(reference => (
-		reference.path === './packages/pkg-placeholder/tsconfig.json'
-			? { path: `./packages/${options.packageDirectory}/tsconfig.json` }
-			: reference
-	))
-
+	rootTsConfig.references = (rootTsConfig.references ?? []).map(reference => (reference.path === './packages/pkg-placeholder/tsconfig.json'
+		? { path: `./packages/${options.packageDirectory}/tsconfig.json` }
+		: reference))
 	const license = createMitLicense(options.authorName.trim())
 	await writeJson(rootPackagePath, rootPackage)
 	await writeJson(packageJsonPath, packageJson)
 	await writeJson(rootTsConfigPath, rootTsConfig)
 	await writeFile(join(root, 'LICENSE'), license)
 	await writeFile(join(placeholderDirectory, 'LICENSE'), license)
-	await writeFile(
-		join(placeholderDirectory, 'README.md'),
-		createPackageReadme(options.packageName, options.description, options.packageRuntime),
-	)
-	await writeFile(
-		join(placeholderDirectory, 'tsdown.config.ts'),
-		createTsdownConfig(options.packageFormat, options.packageRuntime),
-	)
-	await writeFile(
-		join(placeholderDirectory, 'tsconfig.package.json'),
-		createPackageTsConfig(options.packageRuntime),
-	)
-	await writeFile(
-		join(placeholderDirectory, 'tsconfig.tests.json'),
-		createTestsTsConfig(options.packageRuntime),
-	)
+	await writeFile(join(placeholderDirectory, 'README.md'), createPackageReadme(options.packageName, options.description, options.packageRuntime))
+	await writeFile(join(placeholderDirectory, 'tsdown.config.ts'), createTsdownConfig(options.packageFormat, options.packageRuntime))
+	await writeFile(join(placeholderDirectory, 'tsconfig.package.json'), createPackageTsConfig(options.packageRuntime))
+	await writeFile(join(placeholderDirectory, 'tsconfig.tests.json'), createTestsTsConfig(options.packageRuntime))
 	await updateTemplateTextFiles(root, options, repositoryUrl, author)
-
 	if (targetDirectory !== placeholderDirectory)
 		await rename(placeholderDirectory, targetDirectory)
 }
-
-function createPackageFiles(
-	rootPackage: PackageJson,
-	options: CreatePackageOptions,
-	license: string,
-): Record<string, string> {
-	const packageJson: PackageJson = {
+function createPackageFiles(rootPackage, options, license) {
+	const packageJson = {
 		name: options.packageName,
 		type: 'module',
 		version: rootPackage.version ?? '0.0.0',
@@ -292,7 +198,6 @@ function createPackageFiles(
 	}
 	applyPackageRuntime(packageJson, options.runtime)
 	applyPackageFormat(packageJson, options.format)
-
 	return {
 		'LICENSE': license,
 		'README.md': createPackageReadme(options.packageName, options.description, options.runtime),
@@ -323,8 +228,7 @@ import { defineProject } from 'vitest/config'
 export default defineProject({})`,
 	}
 }
-
-function createPackageTsConfig(runtime: PackageRuntime): string {
+function createPackageTsConfig(runtime) {
 	const extendsConfig = runtime === 'browser'
 		? '@deviltea/tsconfig/browser'
 		: runtime === 'node'
@@ -338,9 +242,8 @@ function createPackageTsConfig(runtime: PackageRuntime): string {
 		include: ['./src/**/*.ts'],
 	}, null, '\t')}\n`
 }
-
-function createTestsTsConfig(runtime: PackageRuntime): string {
-	const compilerOptions: Record<string, unknown> = {
+function createTestsTsConfig(runtime) {
+	const compilerOptions = {
 		composite: true,
 	}
 	if (runtime === 'browser')
@@ -351,23 +254,19 @@ function createTestsTsConfig(runtime: PackageRuntime): string {
 		include: ['./src/**/*.ts', './tests/**/*.ts'],
 	}, null, '\t')}\n`
 }
-
-function applyPackageRuntime(packageJson: PackageJson, runtime: PackageRuntime): void {
+function applyPackageRuntime(packageJson, runtime) {
 	delete packageJson.engines
-
 	if (runtime === 'node') {
 		packageJson.engines = {
 			node: '>=22',
 		}
 	}
 }
-
-function applyPackageFormat(packageJson: PackageJson, format: PackageFormat): void {
+function applyPackageFormat(packageJson, format) {
 	delete packageJson.exports
 	delete packageJson.main
 	delete packageJson.module
 	delete packageJson.types
-
 	if (format === 'esm') {
 		Object.assign(packageJson, {
 			exports: {
@@ -382,7 +281,6 @@ function applyPackageFormat(packageJson: PackageJson, format: PackageFormat): vo
 		})
 		return
 	}
-
 	Object.assign(packageJson, {
 		exports: {
 			'.': {
@@ -401,8 +299,7 @@ function applyPackageFormat(packageJson: PackageJson, format: PackageFormat): vo
 		types: './dist/index.d.mts',
 	})
 }
-
-function createTsdownConfig(format: PackageFormat, runtime: PackageRuntime): string {
+function createTsdownConfig(format, runtime) {
 	const formats = format === 'esm' ? '[\'esm\']' : '[\'esm\', \'cjs\']'
 	const target = runtime === 'node' ? 'node22' : 'es2022'
 	const fixedExtension = format === 'dual' ? '\n\tfixedExtension: true,' : ''
@@ -423,20 +320,14 @@ export default defineConfig({
 })
 `
 }
-
-function createKeywords(runtime: PackageRuntime): string[] {
+function createKeywords(runtime) {
 	if (runtime === 'browser')
 		return ['typescript', 'browser']
 	if (runtime === 'node')
 		return ['typescript', 'node']
 	return ['typescript']
 }
-
-function createPackageReadme(
-	packageName: string,
-	description: string,
-	runtime: PackageRuntime,
-): string {
+function createPackageReadme(packageName, description, runtime) {
 	return `# ${packageName}
 
 ${description.trim()}
@@ -462,16 +353,14 @@ import {} from '${packageName}'
 [MIT](./LICENSE)
 `
 }
-
-function getRuntimeDescription(runtime: PackageRuntime): string {
+function getRuntimeDescription(runtime) {
 	if (runtime === 'browser')
 		return 'Browser-targeted package output.'
 	if (runtime === 'node')
 		return 'Node.js 22 or newer.'
 	return 'Platform-neutral package output for shared libraries.'
 }
-
-function createMitLicense(authorName: string): string {
+function createMitLicense(authorName) {
 	const currentYear = new Date()
 		.getUTCFullYear()
 	return `MIT License
@@ -497,16 +386,9 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 `
 }
-
-async function updateTemplateTextFiles(
-	root: string,
-	options: InitializeTemplateOptions,
-	repositoryUrl: string,
-	author: string,
-): Promise<void> {
+async function updateTemplateTextFiles(root, options, repositoryUrl, author) {
 	await writeFile(join(root, 'README.md'), createInitializedReadme(options, repositoryUrl))
-
-	const replacements: Array<[string, string]> = [
+	const replacements = [
 		['@deviltea/pkg-placeholder', options.packageName],
 		['packages/pkg-placeholder', `packages/${options.packageDirectory}`],
 		['https://github.com/DevilTea/repo-placeholder', repositoryUrl],
@@ -517,16 +399,13 @@ async function updateTemplateTextFiles(
 		['pkg-placeholder', options.packageName],
 		['_description_', options.description.trim()],
 	]
-
 	for (const relativePath of ['docs/index.md', 'docs/.vitepress/config.ts', 'AGENTS.md']) {
 		const filePath = join(root, relativePath)
 		if (!(await pathExists(filePath)))
 			continue
-
 		let content = await readFile(filePath, 'utf8')
 		for (const [search, replacement] of replacements)
 			content = content.replaceAll(search, replacement)
-
 		if (relativePath === 'docs/.vitepress/config.ts')
 			content = content.replace('https://github.com/vuejs/vitepress', repositoryUrl)
 		if (relativePath === 'AGENTS.md') {
@@ -534,12 +413,10 @@ async function updateTemplateTextFiles(
 				.replace(/Starter template for a TypeScript pnpm monorepo[^\n]+\n/, `${options.repositoryName} is a TypeScript pnpm monorepo publishing packages to npm, with a VitePress documentation site. Requires Node >=24, TypeScript 6, and pnpm 10.34.4. All dependency versions are managed centrally through the catalog in pnpm-workspace.yaml.\n`)
 				.replace(/- This is a template:[^\n]+\n/, '')
 		}
-
 		await writeFile(filePath, content)
 	}
 }
-
-function createInitializedReadme(options: InitializeTemplateOptions, repositoryUrl: string): string {
+function createInitializedReadme(options, repositoryUrl) {
 	const currentYear = new Date()
 		.getUTCFullYear()
 	return `# ${options.repositoryName}
@@ -584,30 +461,25 @@ Configure GitHub Pages, a protected \`release\` environment, and npm trusted pub
 Repository: ${repositoryUrl}
 `
 }
-
-function normalizeRepository(repository: unknown, directoryName: string): unknown {
+function normalizeRepository(repository, directoryName) {
 	if (typeof repository === 'string')
 		return { type: 'git', url: repository, directory: `packages/${directoryName}` }
 	if (repository && typeof repository === 'object')
 		return { ...repository, directory: `packages/${directoryName}` }
 	return undefined
 }
-
-function normalizeBugs(bugs: unknown): unknown {
+function normalizeBugs(bugs) {
 	if (typeof bugs === 'string')
 		return { url: bugs }
 	return bugs
 }
-
-async function readJson<T>(filePath: string): Promise<T> {
-	return JSON.parse(await readFile(filePath, 'utf8')) as T
+async function readJson(filePath) {
+	return JSON.parse(await readFile(filePath, 'utf8'))
 }
-
-async function writeJson(filePath: string, value: unknown): Promise<void> {
+async function writeJson(filePath, value) {
 	await writeFile(filePath, `${JSON.stringify(value, null, '\t')}\n`)
 }
-
-async function pathExists(filePath: string): Promise<boolean> {
+async function pathExists(filePath) {
 	try {
 		await access(filePath)
 		return true
