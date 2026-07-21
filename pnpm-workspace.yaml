@@ -7,6 +7,10 @@ blockExoticSubdeps: true
 strictDepBuilds: true
 shellEmulator: true
 trustPolicy: no-downgrade
+# Vetted Node.js-owned type package required by @types/node 22.x; this historical
+# version predates consistent npm provenance and is exempted narrowly by version.
+trustPolicyExclude:
+  - undici-types@6.21.0
 packages:
   - docs
   - packages/*
@@ -16,7 +20,7 @@ catalog:
   '@deviltea/eslint-config': 9.0.0
   '@deviltea/tsconfig': 1.0.0
   '@shikijs/vitepress-twoslash': ^3.23.0
-  '@types/node': ^24.3.0
+  '@types/node': ^22.20.0
   '@vitest/coverage-v8': ^4.1.9
   bumpp: ^10.4.1
   eslint: ^10.5.0
