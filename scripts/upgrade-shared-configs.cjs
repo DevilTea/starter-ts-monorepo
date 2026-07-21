@@ -197,8 +197,17 @@ replaceOnce(
 )
 replaceOnce(
 	'README.md',
-	'Each runtime choice now also selects its matching TypeScript environment: neutral source excludes platform globals, browser source receives DOM libraries, Node.js source receives Node declarations, and test/config projects use the Node-based tooling preset.',
-	'Each runtime choice selects the matching `@deviltea/tsconfig` v1 preset: neutral source excludes platform globals, browser source receives DOM libraries, bundled Node.js source receives Node declarations with bundler resolution, and test/config projects use the tooling preset.',
+	`The selected runtime controls both the tsdown platform/target and the TypeScript environment:
+
+- Platform-neutral packages use the base config with only \`ESNext\` libraries and no ambient platform types.
+- Browser packages use DOM libraries and browser-oriented builds.
+- Node.js packages use Node types, target Node.js 22, and declare \`engines.node >=22\`.`,
+	`The selected runtime maps to a matching \`@deviltea/tsconfig\` v1 preset and tsdown target:
+
+- Platform-neutral packages use \`neutral\`, which excludes browser and Node.js globals.
+- Browser packages use \`browser\`, which provides DOM libraries.
+- Node.js packages use \`node-bundler\`, target Node.js 22, and declare \`engines.node >=22\`.
+- Tests, repository scripts, and tool configuration use \`tooling\`.`,
 )
 replaceOnce(
 	'AGENTS.md',
