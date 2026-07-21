@@ -5,6 +5,7 @@ A TypeScript pnpm monorepo starter for publishing platform-neutral, browser, or 
 ## Requirements
 
 - Node.js 24 or newer for repository tooling
+- TypeScript 6 through the workspace catalog
 - pnpm 10.34.4 through Corepack
 
 ## Use this template
@@ -51,11 +52,14 @@ The initializer and `pnpm newpkg` ask for two independent choices:
 - **Runtime:** platform-neutral for shared libraries, browser for browser-oriented packages, or Node.js 22+ for packages that use Node.js APIs.
 - **Module format:** ESM-only by default, or dual ESM/CommonJS when legacy CommonJS consumers are an explicit requirement.
 
-The selected runtime controls both the tsdown platform/target and the TypeScript environment:
+The selected runtime maps to a matching `@deviltea/tsconfig` v1 preset and tsdown target:
 
-- Platform-neutral packages use the base config with only `ESNext` libraries and no ambient platform types.
-- Browser packages use DOM libraries and browser-oriented builds.
-- Node.js packages use Node types, target Node.js 22, and declare `engines.node >=22`.
+- Platform-neutral packages use `neutral`, which excludes browser and Node.js globals.
+- Browser packages use `browser`, which provides DOM libraries.
+- Node.js packages use `node-bundler`, target Node.js 22, and declare `engines.node >=22`.
+- Tests, repository scripts, and tool configuration use `tooling`.
+
+The workspace deliberately retains Node.js 22 declarations so Node-targeted packages cannot typecheck against APIs newer than their published Node.js 22 runtime contract, even though repository tooling itself runs on Node.js 24.
 
 ## Repository setup checklist
 

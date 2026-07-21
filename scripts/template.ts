@@ -326,20 +326,15 @@ export default defineProject({})`,
 
 function createPackageTsConfig(runtime: PackageRuntime): string {
 	const extendsConfig = runtime === 'browser'
-		? '@deviltea/tsconfig/dom'
+		? '@deviltea/tsconfig/browser'
 		: runtime === 'node'
-			? '@deviltea/tsconfig/node'
-			: '@deviltea/tsconfig/base'
-	const compilerOptions: Record<string, unknown> = {
-		composite: true,
-	}
-	if (runtime === 'neutral') {
-		compilerOptions.lib = ['ESNext']
-		compilerOptions.types = []
-	}
+			? '@deviltea/tsconfig/node-bundler'
+			: '@deviltea/tsconfig/neutral'
 	return `${JSON.stringify({
 		extends: extendsConfig,
-		compilerOptions,
+		compilerOptions: {
+			composite: true,
+		},
 		include: ['./src/**/*.ts'],
 	}, null, '\t')}\n`
 }
@@ -349,9 +344,9 @@ function createTestsTsConfig(runtime: PackageRuntime): string {
 		composite: true,
 	}
 	if (runtime === 'browser')
-		compilerOptions.lib = ['ESNext', 'DOM', 'DOM.Iterable']
+		compilerOptions.lib = ['ES2024', 'DOM', 'DOM.Iterable']
 	return `${JSON.stringify({
-		extends: '@deviltea/tsconfig/node',
+		extends: '@deviltea/tsconfig/tooling',
 		compilerOptions,
 		include: ['./src/**/*.ts', './tests/**/*.ts'],
 	}, null, '\t')}\n`
@@ -536,7 +531,7 @@ async function updateTemplateTextFiles(
 			content = content.replace('https://github.com/vuejs/vitepress', repositoryUrl)
 		if (relativePath === 'AGENTS.md') {
 			content = content
-				.replace(/Starter template for a TypeScript pnpm monorepo[^\n]+\n/, `${options.repositoryName} is a TypeScript pnpm monorepo publishing packages to npm, with a VitePress documentation site. Requires Node >=24 and pnpm 10.34.4. All dependency versions are managed centrally through the catalog in pnpm-workspace.yaml.\n`)
+				.replace(/Starter template for a TypeScript pnpm monorepo[^\n]+\n/, `${options.repositoryName} is a TypeScript pnpm monorepo publishing packages to npm, with a VitePress documentation site. Requires Node >=24, TypeScript 6, and pnpm 10.34.4. All dependency versions are managed centrally through the catalog in pnpm-workspace.yaml.\n`)
 				.replace(/- This is a template:[^\n]+\n/, '')
 		}
 
@@ -558,6 +553,7 @@ ${options.description.trim()}
 ## Requirements
 
 - Node.js 24 or newer for repository tooling
+- TypeScript 6 through the workspace catalog
 - pnpm 10.34.4 through Corepack
 
 ## Development

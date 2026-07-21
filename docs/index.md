@@ -15,7 +15,7 @@ hero:
 
 features:
   - title: Runtime-aware packages
-    details: Generate platform-neutral, browser, or Node.js packages with matching tsdown and TypeScript environments.
+    details: Generate platform-neutral, browser, or Node.js packages with matching tsdown targets and TypeScript 6 runtime presets.
   - title: ESM-first publishing
     details: Default to ESM-only output or select deterministic ESM/CommonJS dual output when compatibility requires it.
   - title: Protected delivery

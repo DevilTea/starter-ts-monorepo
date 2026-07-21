@@ -36,7 +36,7 @@ describe('createPackage', () => {
 		expect(packageJson.keywords)
 			.toEqual(['typescript', 'node'])
 		expect(packageTsConfig.extends)
-			.toBe('@deviltea/tsconfig/node')
+			.toBe('@deviltea/tsconfig/node-bundler')
 		expect(await readFile(join(root, 'packages/new-package/README.md'), 'utf8'))
 			.toContain('Node.js 22 or newer.')
 		expect(await readFile(join(root, 'packages/new-package/LICENSE'), 'utf8'))
@@ -82,11 +82,13 @@ describe('createPackage', () => {
 		expect(packageJson.keywords)
 			.toEqual(['typescript', 'browser'])
 		expect(packageTsConfig.extends)
-			.toBe('@deviltea/tsconfig/dom')
+			.toBe('@deviltea/tsconfig/browser')
+		expect(testsTsConfig.extends)
+			.toBe('@deviltea/tsconfig/tooling')
 		expect(testsTsConfig.compilerOptions)
 			.toEqual({
 				composite: true,
-				lib: ['ESNext', 'DOM', 'DOM.Iterable'],
+				lib: ['ES2024', 'DOM', 'DOM.Iterable'],
 			})
 		expect(buildConfig)
 			.toContain('format: [\'esm\']')
@@ -113,12 +115,10 @@ describe('createPackage', () => {
 		expect(packageJson.engines)
 			.toBeUndefined()
 		expect(packageTsConfig.extends)
-			.toBe('@deviltea/tsconfig/base')
+			.toBe('@deviltea/tsconfig/neutral')
 		expect(packageTsConfig.compilerOptions)
 			.toEqual({
 				composite: true,
-				lib: ['ESNext'],
-				types: [],
 			})
 	})
 
@@ -192,11 +192,11 @@ describe('initializeTemplate', () => {
 			.toEqual(['typescript'])
 		expect(buildConfig)
 			.toContain('platform: \'neutral\'')
+		expect(packageTsConfig.extends)
+			.toBe('@deviltea/tsconfig/neutral')
 		expect(packageTsConfig.compilerOptions)
 			.toEqual({
 				composite: true,
-				lib: ['ESNext'],
-				types: [],
 			})
 		expect(tsConfig.references)
 			.toContainEqual({ path: './packages/core/tsconfig.json' })
