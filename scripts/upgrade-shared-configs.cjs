@@ -15,6 +15,14 @@ function replaceOnce(file, from, to) {
 	write(file, content.replace(from, to))
 }
 
+function replaceLast(file, from, to) {
+	const content = read(file)
+	const index = content.lastIndexOf(from)
+	if (index < 0)
+		throw new Error(`Expected text not found in ${file}: ${from.slice(0, 120)}`)
+	write(file, `${content.slice(0, index)}${to}${content.slice(index + from.length)}`)
+}
+
 function updateJson(file, update) {
 	const value = JSON.parse(read(file))
 	update(value)
@@ -162,14 +170,10 @@ replaceOnce(
 \t\t\t\tcomposite: true,
 \t\t\t})`,
 )
-replaceOnce(
+replaceLast(
 	'scripts/template.test.ts',
-	`\t\texpect(buildConfig)
-\t\t\t.toContain('platform: \'neutral\'')
-\t\texpect(packageTsConfig.compilerOptions)`,
-	`\t\texpect(buildConfig)
-\t\t\t.toContain('platform: \'neutral\'')
-\t\texpect(packageTsConfig.extends)
+	'\t\texpect(packageTsConfig.compilerOptions)',
+	`\t\texpect(packageTsConfig.extends)
 \t\t\t.toBe('@deviltea/tsconfig/neutral')
 \t\texpect(packageTsConfig.compilerOptions)`,
 )
