@@ -74,7 +74,24 @@ jobs:
         run: pnpm lint
 
       - name: Typecheck workspaces
-        run: pnpm typecheck
+        id: typecheck
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm typecheck 2>&1 | tee typecheck.log
+
+      - name: Upload TypeScript diagnostics
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: shared-config-typescript-diagnostics
+          path: typecheck.log
+          retention-days: 1
+
+      - name: Stop after workspace typecheck failure
+        if: steps.typecheck.outcome == 'failure'
+        run: exit 1
 
       - name: Typecheck project references
         run: pnpm typecheck:build
