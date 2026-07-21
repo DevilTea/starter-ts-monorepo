@@ -59,6 +59,8 @@ The selected runtime maps to a matching `@deviltea/tsconfig` v1 preset and tsdow
 - Node.js packages use `node-bundler`, target Node.js 22, and declare `engines.node >=22`.
 - Tests, repository scripts, and tool configuration use `tooling`.
 
+The workspace deliberately retains Node.js 22 declarations so Node-targeted packages cannot typecheck against APIs newer than their published Node.js 22 runtime contract, even though repository tooling itself runs on Node.js 24.
+
 ## Repository setup checklist
 
 - Enable GitHub Pages with **GitHub Actions** as the source.
