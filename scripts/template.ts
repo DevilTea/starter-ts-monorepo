@@ -255,6 +255,10 @@ export async function initializeTemplate(root: string, options: InitializeTempla
 		join(placeholderDirectory, 'tsconfig.tests.json'),
 		createTestsTsConfig(options.packageRuntime),
 	)
+	await writeFile(
+		join(placeholderDirectory, '.attw.json'),
+		createAttwConfig(options.packageFormat),
+	)
 	await updateTemplateTextFiles(root, options, repositoryUrl, author)
 
 	if (targetDirectory !== placeholderDirectory)
@@ -294,6 +298,7 @@ function createPackageFiles(
 	applyPackageFormat(packageJson, options.format)
 
 	return {
+		'.attw.json': createAttwConfig(options.format),
 		'LICENSE': license,
 		'README.md': createPackageReadme(options.packageName, options.description, options.runtime),
 		'package.json': JSON.stringify(packageJson, null, '\t'),
@@ -322,6 +327,12 @@ import { defineProject } from 'vitest/config'
 
 export default defineProject({})`,
 	}
+}
+
+function createAttwConfig(format: PackageFormat): string {
+	return `${JSON.stringify({
+		profile: format === 'dual' ? 'node16' : 'esm-only',
+	}, null, '\t')}\n`
 }
 
 function createPackageTsConfig(runtime: PackageRuntime): string {
@@ -567,6 +578,7 @@ pnpm typecheck:build
 pnpm test:coverage
 pnpm build
 pnpm publint
+pnpm attw
 pnpm package:smoke
 pnpm docs:build
 \`\`\`
@@ -575,7 +587,7 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for pull request requirements and [SECU
 
 ## Release setup
 
-Configure GitHub Pages, a protected \`release\` environment, and npm trusted publishing for \`release.yml\` before running the release workflows.
+Configure GitHub Pages, enable GitHub release immutability, create a protected \`release\` environment, and configure npm trusted publishing for \`release.yml\` before running the release workflows.
 
 ## License
 

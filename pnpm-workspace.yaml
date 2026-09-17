@@ -1,11 +1,12 @@
+blockExoticSubdeps: true
+
 # Supply-chain security baseline (see DevilTea/hub templates/pnpm-security.md)
 minimumReleaseAge: 4320
 minimumReleaseAgeExclude:
   - '@deviltea/eslint-config'
   - '@deviltea/tsconfig'
-blockExoticSubdeps: true
-strictDepBuilds: true
 shellEmulator: true
+strictDepBuilds: true
 trustPolicy: no-downgrade
 # Vetted Node.js-owned type package required by @types/node 22.x; this historical
 # version predates consistent npm provenance and is exempted narrowly by version.
@@ -14,29 +15,34 @@ trustPolicyExclude:
 packages:
   - docs
   - packages/*
-
+# Security floors for vulnerable dev-tooling transitives until upstream lockfiles move.
+overrides:
+  nanoid@3: '>=3.3.18 <4'
+  postcss@8: '>=8.5.23 <9'
 catalog:
+  '@arethetypeswrong/cli': ^0.18.5
   '@clack/prompts': ^0.11.0
   '@deviltea/eslint-config': 9.0.0
   '@deviltea/tsconfig': 1.0.0
   '@shikijs/vitepress-twoslash': ^3.23.0
-  '@types/node': ^22.20.0
-  '@vitest/coverage-v8': ^4.1.9
+  '@types/node': ^22.20.2
+  '@vitest/coverage-v8': ^4.1.11
   bumpp: ^10.4.1
-  eslint: ^10.5.0
+  cross-spawn: ^7.0.6
+  eslint: ^10.10.0
   lint-staged: ^16.4.0
-  publint: ^0.3.21
-  simple-git-hooks: ^2.13.1
-  tsdown: ^0.19.0
-  tsx: ^4.22.5
+  pkg-pr-new: ^0.0.88
+  publint: ^0.3.24
+  simple-git-hooks: ^2.14.0
+  tsdown: 0.22.14
+  tsx: ^4.23.13
   typescript: ^6.0.3
   vite: ^7.3.6
   vitepress: 2.0.0-alpha.17
   vitepress-plugin-group-icons: ^1.7.5
-  vitest: ^4.1.9
+  vitest: ^4.1.11
   vue: ^3.5.39
   vue-tsc: ^3.3.6
-
 ignoredBuiltDependencies:
   - esbuild
   - simple-git-hooks

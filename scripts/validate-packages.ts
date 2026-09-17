@@ -8,11 +8,15 @@ import { fileURLToPath } from 'node:url'
 interface PackageManifest {
 	name?: string
 	private?: boolean
+	version?: string
 	exports?: unknown
 	main?: string
 }
 
 const root = fileURLToPath(new URL('..', import.meta.url))
+const rootManifest = JSON.parse(await readFile(join(root, 'package.json'), 'utf8')) as PackageManifest
+if (!rootManifest.version)
+	throw new Error('Root package.json does not define a package version.')
 const packagesRoot = join(root, 'packages')
 const typeScriptCli = join(root, 'node_modules', 'typescript', 'bin', 'tsc')
 const packageDirectories = (await readdir(packagesRoot, { withFileTypes: true }))
@@ -27,6 +31,10 @@ for (const packageDirectory of packageDirectories) {
 		continue
 	if (!manifest.name)
 		throw new Error(`${packageJsonPath} does not define a package name.`)
+	if (!manifest.version)
+		throw new Error(`${packageJsonPath} does not define a package version.`)
+	if (manifest.version !== rootManifest.version)
+		throw new Error(`${manifest.name} version ${manifest.version} does not match root version ${rootManifest.version}.`)
 
 	await validatePackage(packageDirectory, manifest)
 	validated += 1

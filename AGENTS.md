@@ -20,6 +20,7 @@ scripts/init-template.ts      # Interactive repository initializer
 scripts/newpkg.ts             # Interactive package scaffold
 scripts/template.ts           # Tested file-system and metadata operations used by both CLIs
 scripts/validate-packages.ts  # Runtime and TypeScript consumer validation for built packages
+scripts/check-attw.mjs        # Packed publish-artifact type-resolution validation; package profile is checked against the effective publish manifest
 scripts/release.ts            # Tested release package discovery and registry-result classification
 scripts/publish-packages.ts   # Resumable npm trusted-publishing runner
 vitest.config.ts              # Package projects plus script integration tests
@@ -46,6 +47,7 @@ pnpm docs:dev
 pnpm docs:build
 pnpm docs:preview
 pnpm publint
+pnpm attw
 pnpm package:smoke
 ```
 
@@ -67,17 +69,18 @@ pnpm package:smoke
 - Vitest is configured at the root with package projects under `packages/*` and a Node project for `scripts/**/*.test.ts`.
 - Package tests live in `packages/<pkg>/tests/*.test.ts`; script integration tests use temporary directories and must cover destructive or metadata-changing behavior.
 - Coverage is opt-in through `pnpm test:coverage`, so ordinary tests and watch mode do not pay the instrumentation cost.
-- `pnpm package:smoke` loads built packages through Node ESM and CJS where supported, then typechecks consumers using TypeScript `Bundler` and `NodeNext` resolution.
+- Each publishable package owns an explicit `.attw.json`: ESM-only packages use `esm-only`, dual ESM/CommonJS packages use `node16`. `pnpm attw` packs each package with pnpm, checks that profile against the effective publish manifest (including `publishConfig` entry-point overrides), and validates the real tarball using that package-local tool config.
+- `pnpm package:smoke` enforces lockstep root/public-package versions, loads built packages through Node ESM and CJS where supported, then typechecks consumers using TypeScript `Bundler` and `NodeNext` resolution.
 - Scaffold tests must cover Node.js, browser, and platform-neutral runtime profiles plus ESM-only and dual-format manifests, TypeScript environments, and build configuration.
 - CI runs build and tests on Node 24 across Ubuntu, Windows, and macOS, plus the stricter package and documentation checks on Ubuntu.
 
 ## Release
 
-- The repository uses a fixed version across the root, private docs workspace, and public packages. Keep all manifests aligned before release.
-- Run `Prepare Release` from `main` with a patch, minor, or major bump. It executes the full quality gate, uses `bumpp -r` to create and push one version commit and `v*` tag, verifies the remote tag, and uploads release metadata.
-- `Release` runs from the successful `Prepare Release` workflow via `workflow_run`. It downloads the metadata, checks out and verifies the immutable tag, repeats the full quality gate, publishes missing package versions with npm trusted publishing, and creates GitHub release notes with `gh release create`.
+- The repository uses a fixed release version across the root and all publishable packages. Keep those manifests aligned before release.
+- Run `Prepare Release` from `main` with a patch, minor, or major bump. It executes the full quality gate, uses `bumpp -r` to create and push one version commit and `v*` tag, verifies the remote tag, creates and verifies the immutable GitHub release, and uploads release metadata.
+- `Release` runs from the successful `Prepare Release` workflow via `workflow_run`. It downloads the metadata, checks out and verifies the prepared commit and immutable GitHub release, repeats the full quality gate, then publishes missing package versions with npm trusted publishing.
 - Configure npm trusted publishing for workflow filename `release.yml`, environment `release`, and allowed action `npm publish`. Do not add an `NPM_TOKEN`.
-- Publishing is resumable: versions already present on npm and existing GitHub releases are skipped. For recovery, manually run `Release` with the existing tag. Do not rerun `Prepare Release` to retry a publish.
+- Enable GitHub release immutability before the first release. `Prepare Release` establishes and verifies an immutable GitHub release immediately after pushing the version tag, so the tag remains locked even if metadata upload or automatic publishing later fails. `Release` publishes only from that immutable release. Manual recovery is allowed only for an existing immutable release with a valid release attestation.
 - Docs deploy automatically to GitHub Pages on every push to `main` (`deploy-docs.yml`).
 - Weekly `security-audit.yml` runs `pnpm audit --audit-level=moderate` (Sundays 21:00 UTC).
 

@@ -23,6 +23,14 @@ describe('discoverPublishablePackages', () => {
 		expect(packages.map(package_ => package_.name))
 			.toEqual(['@example/alpha', '@example/zeta'])
 	})
+
+	it('rejects a publishable package version that diverges from the root release version', async () => {
+		const root = await createRoot()
+		await createPackage(root, 'mismatch', { name: '@example/mismatch', version: '1.2.4' })
+
+		await expect(discoverPublishablePackages(root))
+			.rejects.toThrow('does not match root version 1.2.3')
+	})
 })
 
 describe('isPackageVersionPublished', () => {
@@ -64,6 +72,7 @@ async function createRoot(): Promise<string> {
 	const root = await mkdtemp(join(tmpdir(), 'release-test-'))
 	roots.push(root)
 	await mkdir(join(root, 'packages'), { recursive: true })
+	await writeFile(join(root, 'package.json'), '{"private":true,"version":"1.2.3"}\n')
 	return root
 }
 
