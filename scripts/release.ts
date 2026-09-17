@@ -20,6 +20,10 @@ export interface CommandResult {
 }
 
 export async function discoverPublishablePackages(root: string): Promise<PublishablePackage[]> {
+	const rootManifest = JSON.parse(await readFile(join(root, 'package.json'), 'utf8')) as PackageManifest
+	if (!rootManifest.version)
+		throw new Error('Root package.json does not define a package version.')
+
 	const packagesRoot = join(root, 'packages')
 	const entries = await readdir(packagesRoot, { withFileTypes: true })
 	const packages: PublishablePackage[] = []
@@ -37,6 +41,11 @@ export async function discoverPublishablePackages(root: string): Promise<Publish
 			throw new Error(`${packageJsonPath} does not define a package name.`)
 		if (!manifest.version)
 			throw new Error(`${packageJsonPath} does not define a package version.`)
+		if (manifest.version !== rootManifest.version) {
+			throw new Error(
+				`${manifest.name} version ${manifest.version} does not match root version ${rootManifest.version}.`,
+			)
+		}
 
 		packages.push({
 			directory,

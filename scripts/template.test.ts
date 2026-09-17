@@ -27,6 +27,11 @@ describe('createPackage', () => {
 		const tsConfig = await readJson(join(root, 'tsconfig.json'))
 		const buildConfig = await readFile(join(root, 'packages/new-package/tsdown.config.ts'), 'utf8')
 		const packageTsConfig = await readJson(join(root, 'packages/new-package/tsconfig.package.json'))
+		const testsTsConfig = await readJson(join(root, 'packages/new-package/tsconfig.tests.json'))
+		const packageRootTsConfig = await readJson(join(root, 'packages/new-package/tsconfig.json'))
+		const attwConfig = await readJson(join(root, 'packages/new-package/.attw.json'))
+		expect(attwConfig.profile)
+			.toBe('node16')
 		expect(packageJson.types)
 			.toBe('./dist/index.d.mts')
 		expect(packageJson.sideEffects)
@@ -37,6 +42,15 @@ describe('createPackage', () => {
 			.toEqual(['typescript', 'node'])
 		expect(packageTsConfig.extends)
 			.toBe('@deviltea/tsconfig/node-bundler')
+		expect(testsTsConfig.extends)
+			.toBe('@deviltea/tsconfig/tooling')
+		expect(testsTsConfig.include)
+			.toEqual(['./src/**/*.ts', './tests/**/*.ts'])
+		expect(packageRootTsConfig.references)
+			.toEqual([
+				{ path: './tsconfig.package.json' },
+				{ path: './tsconfig.tests.json' },
+			])
 		expect(await readFile(join(root, 'packages/new-package/README.md'), 'utf8'))
 			.toContain('Node.js 22 or newer.')
 		expect(await readFile(join(root, 'packages/new-package/LICENSE'), 'utf8'))
@@ -68,6 +82,9 @@ describe('createPackage', () => {
 		const buildConfig = await readFile(join(root, 'packages/esm-package/tsdown.config.ts'), 'utf8')
 		const packageTsConfig = await readJson(join(root, 'packages/esm-package/tsconfig.package.json'))
 		const testsTsConfig = await readJson(join(root, 'packages/esm-package/tsconfig.tests.json'))
+		const attwConfig = await readJson(join(root, 'packages/esm-package/.attw.json'))
+		expect(attwConfig.profile)
+			.toBe('esm-only')
 		expect(packageJson.exports)
 			.toEqual({
 				'.': {
@@ -90,6 +107,8 @@ describe('createPackage', () => {
 				composite: true,
 				lib: ['ES2024', 'DOM', 'DOM.Iterable'],
 			})
+		expect(testsTsConfig.include)
+			.toEqual(['./src/**/*.ts', './tests/**/*.ts'])
 		expect(buildConfig)
 			.toContain('format: [\'esm\']')
 		expect(buildConfig)
@@ -134,6 +153,34 @@ describe('createPackage', () => {
 			runtime: 'neutral',
 		})).rejects.toThrow('already exists')
 	})
+
+	it('keeps root package project references sorted and unique', async () => {
+		const root = await createRoot()
+
+		await createPackage(root, {
+			description: 'A later package',
+			directoryName: 'zeta',
+			format: 'esm',
+			packageName: '@example/zeta',
+			runtime: 'neutral',
+		})
+		await createPackage(root, {
+			description: 'An earlier package',
+			directoryName: 'alpha',
+			format: 'esm',
+			packageName: '@example/alpha',
+			runtime: 'neutral',
+		})
+
+		const tsConfig = await readJson(join(root, 'tsconfig.json'))
+		expect(tsConfig.references)
+			.toEqual([
+				{ path: './packages/alpha/tsconfig.json' },
+				{ path: './packages/pkg-placeholder/tsconfig.json' },
+				{ path: './packages/zeta/tsconfig.json' },
+				{ path: './tsconfig.scripts.json' },
+			])
+	})
 })
 
 describe('initializeTemplate', () => {
@@ -148,6 +195,13 @@ describe('initializeTemplate', () => {
 			},
 		})
 		await writeFile(join(root, 'packages/pkg-placeholder/tsdown.config.ts'), '')
+		await writeJson(join(root, 'packages/pkg-placeholder/tsconfig.json'), {
+			files: [],
+			references: [
+				{ path: './tsconfig.package.json' },
+				{ path: './tsconfig.tests.json' },
+			],
+		})
 		await writeFile(join(root, 'README.md'), '# pkg-placeholder\n\n_description_\n')
 		await mkdir(join(root, 'docs/.vitepress'), { recursive: true })
 		await writeFile(join(root, 'docs/index.md'), 'repo-placeholder\n')
@@ -172,6 +226,16 @@ describe('initializeTemplate', () => {
 		const readme = await readFile(join(root, 'README.md'), 'utf8')
 		const buildConfig = await readFile(join(root, 'packages/core/tsdown.config.ts'), 'utf8')
 		const packageTsConfig = await readJson(join(root, 'packages/core/tsconfig.package.json'))
+		const testsTsConfig = await readJson(join(root, 'packages/core/tsconfig.tests.json'))
+		const packageRootTsConfig = await readJson(join(root, 'packages/core/tsconfig.json'))
+		const attwConfig = await readJson(join(root, 'packages/core/.attw.json'))
+		expect(attwConfig.profile)
+			.toBe('esm-only')
+		expect(packageRootTsConfig.references)
+			.toEqual([
+				{ path: './tsconfig.package.json' },
+				{ path: './tsconfig.tests.json' },
+			])
 		expect(rootPackage.repository)
 			.toEqual({
 				type: 'git',
@@ -198,11 +262,21 @@ describe('initializeTemplate', () => {
 			.toEqual({
 				composite: true,
 			})
+		expect(testsTsConfig.extends)
+			.toBe('@deviltea/tsconfig/tooling')
+		expect(testsTsConfig.include)
+			.toEqual(['./src/**/*.ts', './tests/**/*.ts'])
 		expect(tsConfig.references)
 			.toContainEqual({ path: './packages/core/tsconfig.json' })
+		expect(tsConfig.references)
+			.not.toContainEqual({ path: './packages/pkg-placeholder/tsconfig.json' })
 		expect(readme).not.toMatch(/pkg-placeholder|repo-placeholder|_description_/)
 		expect(readme)
 			.toContain('Platform-neutral package output')
+		expect(readme)
+			.toContain('pnpm attw')
+		expect(readme)
+			.toContain('enable GitHub release immutability')
 		expect(await readFile(join(root, 'packages/core/README.md'), 'utf8'))
 			.toContain('Example project')
 		expect(await readFile(join(root, 'packages/core/LICENSE'), 'utf8'))

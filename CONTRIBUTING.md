@@ -17,6 +17,7 @@ pnpm typecheck:build
 pnpm test:coverage
 pnpm build
 pnpm publint
+pnpm attw
 pnpm package:smoke
 pnpm docs:build
 ```

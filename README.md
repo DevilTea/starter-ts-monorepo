@@ -41,6 +41,7 @@ A TypeScript pnpm monorepo starter for publishing platform-neutral, browser, or 
    pnpm test:coverage
    pnpm build
    pnpm publint
+   pnpm attw
    pnpm package:smoke
    pnpm docs:build
    ```
@@ -66,6 +67,7 @@ The workspace deliberately retains Node.js 22 declarations so Node-targeted pack
 - Enable GitHub Pages with **GitHub Actions** as the source.
 - Protect `main` with required CI checks and pull requests.
 - Create a protected GitHub environment named `release`.
+- Enable **release immutability** under repository release settings; the release workflow fails closed if a GitHub release is mutable.
 - Configure npm trusted publishing for each public package with workflow `release.yml`, environment `release`, and action `npm publish`.
 - Enable Dependabot alerts, secret scanning, push protection, and code scanning where available.
 - Enable private vulnerability reporting so `SECURITY.md` can direct reporters to a confidential channel.
@@ -79,7 +81,7 @@ The release workflow uses OIDC and does not require an `NPM_TOKEN` repository se
 pnpm newpkg
 ```
 
-The scaffold requests package metadata, runtime target, and module format; refuses to overwrite an existing directory; copies the repository license; creates a package-local README; and adds the package to the root TypeScript project-reference graph.
+The scaffold requests package metadata, runtime target, and module format; refuses to overwrite an existing directory; copies the repository license; creates a package-local README and `.attw.json` profile; and adds the package to the root TypeScript project-reference graph.
 
 ## Contributing and security
 
@@ -88,10 +90,10 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for the complete quality gate. Report v
 ## Release
 
 1. Run the **Prepare Release** workflow from `main` and select `patch`, `minor`, or `major`.
-2. The workflow validates the repository, creates one version commit and `v*` tag, pushes both, and uploads immutable release metadata.
-3. The **Release** workflow starts after preparation completes, checks out the exact tag, validates it again, publishes missing package versions through npm trusted publishing, and creates GitHub release notes.
+2. The workflow validates the repository, creates one version commit and `v*` tag, pushes both, creates and verifies the immutable GitHub release, then uploads exact release metadata.
+3. The **Release** workflow starts after preparation completes, checks out that locked tag, validates it again, and publishes missing package versions through npm trusted publishing.
 
-Publishing is resumable. Already-published package versions and an existing GitHub release are skipped. To recover a failed publish after the preparation artifact expires, manually run the **Release** workflow and enter the existing `v*` tag. Never run **Prepare Release** again merely to retry publishing, because that creates a new version.
+Publishing is resumable after **Prepare Release** establishes the immutable GitHub release. Already-published package versions are skipped. To recover a partial or interrupted publish later, manually run **Release** from `main` with the existing `v*` tag; recovery requires the existing GitHub release to be immutable and its release attestation to verify. Never rerun **Prepare Release** merely to retry publishing, because that creates a new version.
 
 ## License
 
